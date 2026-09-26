@@ -18,11 +18,11 @@ async function verifyUser(req) {
     return getFirebaseAdmin().auth().verifyIdToken(token);
 }
 
-const ADMIN_PASSWORD = 'nathandeveloper';
-
 function verifyAdmin(req) {
+    const configuredPassword = process.env.ADMIN_PASSWORD;
+    if (!configuredPassword) throw new Error('ADMIN_PASSWORD_NOT_CONFIGURED');
     const password = req.headers['x-admin-password'];
-    if (!password || password !== ADMIN_PASSWORD) throw new Error('ADMIN_REQUIRED');
+    if (!password || password !== configuredPassword) throw new Error('ADMIN_REQUIRED');
 }
 
 export default async function handler(req, res) {
@@ -30,6 +30,11 @@ export default async function handler(req, res) {
         const firebaseAdmin = getFirebaseAdmin();
         const db = firebaseAdmin.firestore();
         const action = String(req.query.action || req.body?.action || '');
+
+        if (action === 'admin-check') {
+            verifyAdmin(req);
+            return res.status(200).json({ ok: true });
+        }
 
         if (action === 'balance' || action === 'redeem' || action === 'consume') {
             const user = await verifyUser(req);
@@ -125,7 +130,8 @@ export default async function handler(req, res) {
         console.error('Redeem API error:', error);
         const messages = {
             AUTH_REQUIRED: ['Unauthorized', 401],
-            ADMIN_REQUIRED: ['Password admin salah atau belum dikonfigurasi.', 403],
+            ADMIN_REQUIRED: ['Password admin salah.', 403],
+            ADMIN_PASSWORD_NOT_CONFIGURED: ['ADMIN_PASSWORD belum diatur di Vercel Environment Variables.', 500],
             CODE_NOT_FOUND: ['Kode redeem tidak ditemukan.', 404],
             CODE_EXPIRED: ['Kode redeem sudah expired.', 410],
             CODE_LIMIT: ['Batas penggunaan kode sudah habis.', 409],
@@ -134,4 +140,4 @@ export default async function handler(req, res) {
         const [message, status] = messages[error.message] || [error.message || 'Server error.', 500];
         return res.status(status).json({ message });
     }
-                }
+}
