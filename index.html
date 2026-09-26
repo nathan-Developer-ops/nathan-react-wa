@@ -1213,12 +1213,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
     <script>
         const FIREBASE_CONFIG = {
-            apiKey: "ISI_API_KEY_FIREBASE",
-            authDomain: "ISI_PROJECT_ID.firebaseapp.com",
-            projectId: "ISI_PROJECT_ID",
-            storageBucket: "ISI_PROJECT_ID.firebasestorage.app",
-            messagingSenderId: "ISI_SENDER_ID",
-            appId: "ISI_APP_ID"
+            apiKey: "AIzaSyAR1jUchFO16q3dmedF8Kl7KGSuyGXqy7k",
+            authDomain: "react-wa-8c009.firebaseapp.com",
+            projectId: "react-wa-8c009",
+            storageBucket: "react-wa-8c009.firebasestorage.app",
+            messagingSenderId: "808121127144",
+            appId: "1:808121127144:web:789e0ee3108f9b22a7b95d"
         };
 
         const DAILY_LIMIT = 2;
@@ -1242,7 +1242,7 @@
 
         async function initFirebaseAuth() {
             if (firebaseReady && firebaseUser) return firebaseUser;
-            if (FIREBASE_CONFIG.apiKey === 'ISI_API_KEY_FIREBASE') {
+            if (FIREBASE_CONFIG.apiKey === 'AIzaSyAR1jUchFO16q3dmedF8Kl7KGSuyGXqy7k') {
                 throw new Error('Firebase config belum diisi.');
             }
             if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
