@@ -1,8 +1,11 @@
 {
-    "$schema": "https://openapi.vercel.sh/vercel.json",
-    "functions": {
-        "api/rch.js": {
-            "maxDuration": 60
-        }
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/rch.js": {
+      "maxDuration": 60
+    },
+    "api/redeem.js": {
+      "maxDuration": 30
     }
+  }
 }
