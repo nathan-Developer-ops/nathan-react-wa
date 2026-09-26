@@ -1,0 +1,4138 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reaction Channel WhatsApp</title>
+<!-- Font Modern Pixel & Sans-Serif (sama seperti tema Payment Mitzy) -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<!-- FontAwesome untuk Icon -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- ===================================================
+     GOOGLE reCAPTCHA v2 ("Saya bukan robot" checkbox)
+     Script resmi Google, wajib dimuat sebelum widget
+     .g-recaptcha bisa dirender di halaman.
+     Site Key yang dipakai: 6Ld6qJ4tAAAAAABSg1tcJdD4y12VOAQf0Lahw0rIR
+=================================================== -->
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
+<!-- ===================================================
+     FIREBASE SDK (COMPAT) — untuk fitur "Login dengan Google"
+     ---------------------------------------------------
+     Pakai versi "compat" (bukan modular v9+) supaya sintaksnya
+     mirip Firebase v8 (firebase.initializeApp, firebase.auth(), dst)
+     dan gampang dipakai tanpa module bundler / build step.
+     WAJIB: aktifkan provider "Google" di Firebase Console ->
+     Authentication -> Sign-in method, sebelum fitur ini berfungsi.
+=================================================== -->
+<!-- 1. Firebase App (WAJIB PERTAMA!) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+
+<!-- 2. Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+<!-- 3. Auth (HARUS SETELAH APP!) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+<!-- ===================================================
+     GOOGLE IDENTITY SERVICES (GIS)
+     ---------------------------------------------------
+     BARU: dipakai untuk alur "Login dengan Google" yang baru.
+     Berjalan langsung di domain accounts.google.com, TIDAK lewat
+     authDomain Firebase (rchmi-7cf0b.firebaseapp.com) sama sekali
+     — ini yang membuat error "missing initial state" hilang,
+     karena tidak ada lagi iframe/storage lintas-domain yang bisa
+     diblokir browser HP.
+=================================================== -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+/* ===================================================
+   1. ROOT VARIABLES & GLOBAL RESET
+   (nilai sama persis dengan tema paymentmitzy-fixed.html)
+=================================================== */
+:root {
+    --bg-color: #f8fafc;
+    --card-bg: rgba(255, 255, 255, 0.90);
+    --border-color: #000000;
+    --accent-blue: #00ffff;
+    --accent-glow: rgba(0, 255, 255, 0.6);
+    --text-dark: #1e293b;
+    --success-color: #22c55e;
+    --warning-color: #f59e0b;
+    --danger-color: #ff4d4d;
+    --body-bg-image: linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    background-color: var(--bg-color);
+    background-image: var(--body-bg-image);
+    background-size: 20px 20px;
+    color: var(--text-dark);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 16px;
+    overflow-x: hidden;
+}
+
+.page { display: none; width: 100%; }
+.page.active { display: flex; justify-content: center; }
+
+/* ===== TOGGLE FORM LOGIN <-> REGISTER =====
+   PENTING: pakai display:none / display:block (BUKAN visibility/opacity)
+   supaya form yang tidak aktif benar-benar dilepas dari layout,
+   tidak menumpuk dengan form yang aktif. */
+.auth-form { display: none; }
+.auth-form.active { display: block; }
+
+/* ===================================================
+   2. KARTU / CARD UTAMA
+   border 4px hitam + box-shadow tebal, sesuai tema
+=================================================== */
+.mc-card {
+    background: var(--card-bg);
+    border: 4px solid var(--border-color);
+    box-shadow: 8px 8px 0px var(--border-color);
+    padding: 24px 20px;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+.header-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    text-shadow: 2px 2px 0px var(--accent-blue);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sub-text {
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.5;
+    margin-bottom: 18px;
+}
+
+/* Subtitle khusus dashboard: dipaksa wrap 2 baris (lihat <br> di HTML)
+   dan tidak boleh menggeser tombol Logout di bawahnya. */
+.dash-sub-text {
+    white-space: normal;
+    word-wrap: break-word;
+    margin-top: 4px;
+    margin-bottom: 14px;
+}
+
+/* ===================================================
+   3. TOMBOL (mc-btn)
+   border 3px hitam + box-shadow 4px 4px 0 hitam
+=================================================== */
+.mc-btn {
+    font-family: 'Press Start 2P', monospace;
+    background-color: var(--accent-blue);
+    color: #000;
+    border: 3px solid var(--border-color);
+    padding: 12px 16px;
+    font-size: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px var(--border-color);
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    width: 100%;
+    text-align: center;
+}
+
+.mc-btn:hover {
+    background-color: #ffffff;
+    box-shadow: 4px 4px 0px var(--border-color), 0 0 12px var(--accent-blue);
+    transform: translate(-2px, -2px);
+}
+
+.mc-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+
+.mc-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.mc-btn.secondary { background-color: #e2e8f0; }
+.mc-btn.danger-btn { background-color: #ffffff; color: var(--danger-color); }
+
+/* ===================================================
+   3B. FITUR "BELI LIMIT OTOMATIS"
+   ---------------------------------------------------
+   Tombol di dashboard + halaman terpisah page-beli-limit.
+   Tema sama persis dengan .mc-btn (border 3px hitam,
+   shadow 4px 4px 0 hitam, accent cyan #00ffff).
+=================================================== */
+.beli-limit-btn {
+    background-color: var(--accent-blue);
+    margin-top: 3px;
+}
+
+.paket-info-current {
+    background: #ffffff;
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0 var(--border-color);
+    padding: 12px 14px;
+    text-align: center;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    margin-bottom: 18px;
+}
+
+.paket-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.paket-card {
+    background: #ffffff;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    padding: 16px 12px;
+    text-align: center;
+    cursor: pointer;
+}
+
+.paket-card:hover {
+    background: #ecfeff;
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 #000, 0 0 15px #00ffff;
+}
+
+.paket-card:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 #000;
+}
+
+.paket-jumlah {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.paket-harga {
+    font-size: 15px;
+    font-weight: 800;
+    color: #0284c7;
+    margin-bottom: 10px;
+}
+
+.paket-beli-label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: #000;
+    background: var(--accent-blue);
+    border: 2px solid #000;
+    display: inline-block;
+    padding: 4px 8px;
+}
+
+.bayar-panel {
+    background: #ffffff;
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0 var(--border-color);
+    padding: 18px;
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.bayar-panel-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px;
+    padding: 5px 0;
+    border-bottom: 1px dashed #cbd5e1;
+    text-align: left;
+}
+
+.bayar-panel-row:last-of-type { border-bottom: none; }
+
+.bayar-status-badge {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 4px 8px;
+    border: 2px solid #000;
+    display: inline-block;
+    text-transform: uppercase;
+}
+
+.bayar-status-pending { background: var(--warning-color); color: #000; }
+.bayar-status-success { background: var(--success-color); color: #000; }
+.bayar-status-expired,
+.bayar-status-failed { background: var(--danger-color); color: #fff; }
+
+.qris-img-wrap {
+    margin: 16px auto;
+    max-width: 220px;
+    border: 3px solid #000;
+    box-shadow: 4px 4px 0 #000;
+    padding: 8px;
+    background: #fff;
+}
+
+.qris-img-wrap img { width: 100%; display: block; }
+
+.bayar-countdown {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--danger-color);
+    margin: 10px 0;
+}
+
+.beli-back-btn {
+    background: #e2e8f0;
+    margin-bottom: 16px;
+}
+
+/* ===================================================
+   4. FORM ELEMENTS (input, label, hint)
+=================================================== */
+.form-group { text-align: left; margin-bottom: 14px; }
+
+.form-label {
+    display: block;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.input-wrap {
+    display: flex;
+    align-items: center;
+    border: 3px solid var(--border-color);
+    background: #fff;
+    box-shadow: 3px 3px 0px var(--border-color);
+    position: relative;
+}
+
+.input-wrap input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    padding: 11px 10px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dark);
+    background: transparent;
+}
+
+.input-wrap input:focus { box-shadow: inset 0 0 0 2px var(--accent-blue); }
+
+.input-icon-btn {
+    background: #f1f5f9;
+    border: 0;
+    border-left: 3px solid var(--border-color);
+    padding: 0 12px;
+    height: 100%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    color: var(--text-dark);
+}
+
+.input-status-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    display: none;
+}
+
+.input-status-icon.valid { display: block; color: var(--success-color); }
+.input-status-icon.invalid { display: block; color: var(--danger-color); }
+
+.field-hint {
+    font-size: 10px;
+    color: #64748b;
+    margin-top: 6px;
+    line-height: 1.5;
+}
+
+.field-error {
+    font-size: 10px;
+    color: var(--danger-color);
+    margin-top: 6px;
+    font-weight: 700;
+    display: none;
+}
+
+.field-error.show { display: block; }
+
+.checkbox-row {
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    margin: 10px 0 16px;
+}
+
+.auth-switch-text {
+    font-size: 11px;
+    margin-top: 14px;
+    color: #475569;
+}
+
+.auth-switch-text a {
+    color: #0284c7;
+    font-weight: 800;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* ===================================================
+   5. PASSWORD STRENGTH METER
+=================================================== */
+.strength-meter-wrap {
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.strength-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border: 2px solid var(--border-color);
+    overflow: hidden;
+}
+
+.strength-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--danger-color);
+}
+
+.strength-label {
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+}
+
+.password-rules {
+    list-style: none;
+    margin-top: 8px;
+    font-size: 9px;
+    color: #64748b;
+    line-height: 1.8;
+}
+
+.password-rules li::before { content: "✗ "; color: var(--danger-color); font-weight: 800; }
+.password-rules li.met::before { content: "✓ "; color: var(--success-color); }
+.password-rules li.met { color: #16a34a; }
+
+/* ===================================================
+   6. DASHBOARD LAYOUT
+=================================================== */
+#page-dashboard .mc-card { max-width: 460px; text-align: left; }
+
+.dash-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.dash-action-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+    align-self: flex-end;
+}
+
+.dash-action-group .logout-btn,
+.dash-action-group .beli-limit-btn {
+    width: auto;
+    padding: 5px 11px;
+    font-size: 8px;
+}
+
+.dash-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    text-shadow: 2px 2px 0px var(--accent-blue);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;    
+    justify-content: center;
+    width: 100%;
+}
+
+/* Baris pembungkus teks + tombol */
+.dash-sub-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start; /* Teks di atas, tombol mulai dari atas */
+    gap: 12px;
+    width: 100%;
+}
+
+/* Teks kiri */
+.dash-tagline {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin: 0;
+    flex: 1;              /* Ambil sisa ruang di kiri */
+    min-width: 0;         /* Biar bisa mengecil */
+    text-align: left;
+    word-wrap: break-word;
+}
+
+.badge-online {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    background: #ffffff;
+    border: 2px solid var(--border-color);
+    padding: 5px 8px;
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+
+.badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--success-color);
+    box-shadow: 0 0 6px var(--success-color);
+    animation: pulseDot 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+}
+
+.logout-btn {
+    width: auto;
+    padding: 8px 10px;
+    font-size: 8px;
+}
+
+.greeting-text {
+    font-size: 14px;
+    font-weight: 800;
+    margin: 14px 0 16px;
+}
+
+/* ===================================================
+   7. LIMIT / QUOTA CARD
+=================================================== */
+.limit-card {
+    background: #ffffff;
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0px var(--border-color);
+    padding: 14px;
+    margin-bottom: 18px;
+}
+
+.limit-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.limit-progress-bg {
+    width: 100%;
+    height: 12px;
+    background: #e2e8f0;
+    border: 2px solid var(--border-color);
+    overflow: hidden;
+}
+
+.limit-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-blue);
+    box-shadow: 0 0 8px var(--accent-glow) inset;
+}
+
+.limit-progress-fill.full { background: var(--danger-color); }
+
+.limit-countdown {
+    font-size: 10px;
+    color: #475569;
+    margin-top: 8px;
+    font-weight: 700;
+}
+
+/* ===================================================
+   8. EMOJI PREVIEW CHIPS
+=================================================== */
+.emoji-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    min-height: 34px;
+}
+
+.emoji-chip {
+    background: #f1f5f9;
+    border: 2px solid var(--border-color);
+    padding: 5px 8px;
+    font-size: 16px;
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+
+.emoji-count-text {
+    font-size: 9px;
+    font-weight: 800;
+    margin-top: 6px;
+    color: #64748b;
+}
+
+/* ===================================================
+   9. RESULT / RESPONSE PANEL
+=================================================== */
+.result-panel {
+    display: none;
+    background: #ffffff;
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0px var(--border-color);
+    padding: 14px;
+    margin-top: 16px;
+}
+
+.result-panel.show { display: block; }
+
+.result-panel-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    margin-bottom: 10px;
+}
+
+.result-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 6px 0;
+    border-bottom: 1px dashed #cbd5e1;
+}
+
+.result-row:last-child { border-bottom: 0; }
+.result-row span:first-child { color: #64748b; font-weight: 600; }
+.result-row strong { font-weight: 800; word-break: break-word; text-align: right; max-width: 60%; }
+
+/* ===================================================
+   10. HISTORY LIST
+=================================================== */
+.history-section { margin-top: 20px; }
+
+.section-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.history-item {
+    background: #ffffff;
+    border: 2px solid var(--border-color);
+    box-shadow: 3px 3px 0px var(--border-color);
+    padding: 10px;
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.history-emoji { font-size: 16px; }
+
+.history-url {
+    font-size: 10px;
+    color: #0284c7;
+    word-break: break-all;
+}
+
+.history-time { font-size: 9px; color: #64748b; }
+
+.history-status {
+    align-self: flex-start;
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border: 2px solid var(--border-color);
+}
+
+.history-status.ok { background: #dcfce7; color: #15803d; }
+.history-status.fail { background: #fee2e2; color: #b91c1c; }
+
+.empty-text { font-size: 11px; color: #94a3b8; text-align: center; padding: 10px 0; }
+
+/* ===================================================
+   11. TOAST NOTIFICATION (bottom-right)
+=================================================== */
+#toast-container {
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 320px;
+    width: calc(100% - 36px);
+}
+
+.toast-item {
+    background: #ffffff;
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0px var(--border-color), 0 0 14px var(--accent-glow);
+    padding: 12px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    transform: translateX(140%);
+    opacity: 0;
+}
+
+.toast-item.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-item.success { border-left: 6px solid var(--success-color); }
+.toast-item.error { border-left: 6px solid var(--danger-color); }
+.toast-item.info { border-left: 6px solid var(--accent-blue); }
+
+/* ===================================================
+   12. FOOTER
+=================================================== */
+.app-footer {
+    text-align: center;
+    font-size: 9px;
+    color: #94a3b8;
+    font-weight: 700;
+    margin-top: 18px;
+    letter-spacing: 0.5px;
+}
+
+/* ===================================================
+   14. BARIS TOMBOL AKSI DASHBOARD (hanya Logout)
+   HAPUS: tombol "Beli Limit" & "Redeem Code" sudah dihapus
+   total dari dashboard sesuai permintaan, jadi baris aksi
+   sekarang hanya berisi tombol Logout.
+=================================================== */
+.dash-action-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+/* ===================================================
+   13. RESPONSIVE (mobile-first, sudah full-width default)
+=================================================== */
+@media (max-width: 380px) {
+    .header-title { font-size: 12px; }
+    .dash-title { font-size: 10px; }
+    .mc-card { padding: 18px 14px; }
+}
+
+.g-recaptcha {
+    transform: scale(0.95);
+    transform-origin: left center;
+    margin: 12px auto;
+    display: inline-block;
+}
+
+/* ===================================================
+   16. SIDEBAR (HAMBURGER MENU)
+   ---------------------------------------------------
+   Struktur: tombol ☰ (fixed, pojok kiri atas) -> klik ->
+   overlay gelap muncul + panel sidebar slide dari kiri.
+   Tema disamakan dengan card utama: border 4px hitam +
+   box-shadow tebal, background putih.
+=================================================== */
+
+/* Tombol pembuka sidebar (hamburger ☰)
+   PENTING:
+   - 'display: none' default — tombol ini HANYA dimunculkan
+     secara eksplisit lewat JS (showDashboardPage()) saat halaman
+     dashboard aktif, dan disembunyikan lagi saat pindah ke halaman
+     login/register (lihat showLoginPage() di <script>).
+   - 'position: fixed' (BUKAN sticky) supaya tombol selalu diam
+     di pojok kiri atas viewport dan TIDAK ikut bergerak/scroll
+     mengikuti konten dashboard, berapa pun panjang halamannya.
+   - Ukuran diperkecil jadi 18x18px sesuai permintaan (pilihan
+     18px dari opsi 15-18px, supaya ikon ☰ masih cukup terbaca). */
+#sidebar-open-btn {
+    display: none;
+    position: fixed;
+    top: 13px;
+    left: 13px;
+    z-index: 1000;
+    width: 25px;
+    height: 25px;
+    box-sizing: border-box;
+    padding: 7px;
+    background: #ffffff;
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0px var(--border-color);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Class ini ditambahkan lewat JS saat dashboard aktif, mengubah
+   'display: none' bawaan menjadi 'display: flex' agar tombol muncul. */
+#sidebar-open-btn.visible {
+    display: flex;
+}
+
+#sidebar-open-btn:hover {
+    background-color: var(--accent-blue);
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0px var(--border-color), 0 0 12px var(--accent-glow);
+}
+
+#sidebar-open-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+
+/* Overlay gelap di luar sidebar — klik ini menutup sidebar */
+#sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+}
+
+#sidebar-overlay.show { display: block; }
+
+/* Panel sidebar itu sendiri */
+#sidebar-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 280px;
+    max-width: 84vw;
+    background: #ffffff;
+    border-right: 4px solid var(--border-color);
+    box-shadow: 8px 0px 0px var(--border-color);
+    z-index: 1002;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    padding: 20px 18px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Animasi slide masuk 0.3s saat class 'show' ditambahkan lewat JS */
+#sidebar-panel.show {
+    transform: translateX(0);
+}
+
+/* Tombol ✕ penutup sidebar, pojok kanan atas panel */
+#sidebar-close-btn {
+    align-self: flex-end;
+    width: 32px;
+    height: 32px;
+    background: #ffffff;
+    border: 2px solid var(--border-color);
+    box-shadow: 2px 2px 0px var(--border-color);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+#sidebar-close-btn:hover { background-color: #ffe4e6; }
+
+/* Foto profil bundar di dalam sidebar */
+.sidebar-profile-pic {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid var(--border-color);
+    box-shadow: 3px 3px 0px var(--border-color);
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 10px;
+}
+
+/* Nama pemilik channel dengan font pixel + glow cyan */
+.sidebar-owner-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    text-align: center;
+    text-shadow: 2px 2px 0px var(--accent-blue);
+    margin-bottom: 16px;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+/* Garis pemisah di dalam sidebar */
+.sidebar-divider {
+    border: none;
+    border-top: 2px dashed #cbd5e1;
+    margin: 14px 0;
+}
+
+/* Tombol-tombol kontak (WhatsApp/Telegram/Donate) di sidebar */
+.sidebar-btn {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    color: #fff;
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0px var(--border-color);
+    padding: 10px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    width: 100%;
+    margin-bottom: 10px;
+    text-transform: none;
+}
+
+.sidebar-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0px var(--border-color), 0 0 10px rgba(0, 0, 0, 0.35);
+}
+
+.sidebar-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--border-color);
+}
+
+.sidebar-btn-wa { background-color: #25d366; }
+.sidebar-btn-tele { background-color: #0088cc; }
+.sidebar-btn-donate { background-color: #facc15; color: #000; }
+
+/* Footer kecil di bagian bawah sidebar */
+.sidebar-footer {
+    text-align: center;
+    font-size: 9px;
+    color: #94a3b8;
+    font-weight: 700;
+    margin-top: auto;
+    padding-top: 14px;
+    letter-spacing: 0.5px;
+}
+
+/* ===================================================
+   17. TOMBOL "LOGIN DENGAN GOOGLE"
+   ---------------------------------------------------
+   Diletakkan PERSIS DI ATAS tombol Login biasa (di dalam
+   #login-form, setelah Remember Me). Warna putih supaya beda
+   dari tombol utama (--accent-blue), lengkap dengan ikon
+   Google berwarna.
+=================================================== */
+#google-login-block {
+    margin-bottom: 12px;
+}
+
+.google-login-btn {
+    background-color: #ffffff;
+    color: var(--text-dark);
+    border: 3px solid var(--border-color);
+    box-shadow: 4px 4px 0px var(--border-color);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    text-transform: none;
+    font-size: 13px;
+    gap: 10px;
+}
+
+.google-login-btn:hover {
+    background-color: #f8fafc;
+    box-shadow: 4px 4px 0px var(--border-color), 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.google-login-btn img {
+    width: 18px;
+    height: 18px;
+}
+
+/* Garis pemisah antara subtitle dan form login */
+.auth-divider {
+    border: none;
+    border-top: 2px dashed #cbd5e1;
+    margin: 16px 0;
+}
+
+  /* ===================================================
+   POPUP WELCOME — REACTION CHANNEL THEME
+   Tema: neo-brutalism, border 4px hitam, shadow tebal,
+   font Press Start 2P + Plus Jakarta Sans, accent cyan.
+=================================================== */
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  backdrop-filter:blur(4px);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  z-index:99999;
+  animation:fadeIn .25s ease;
+}
+.modal-overlay.show{display:flex}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{
+  0%{opacity:0;transform:translateY(15px) scale(.96)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+
+.modal-box{
+  position:relative;
+  width:min(420px,100%);
+  background:#ffffff;
+  border:4px solid var(--border-color);
+  box-shadow:8px 8px 0px var(--border-color);
+  padding:56px 22px 22px;
+  animation:popIn .3s cubic-bezier(.2,.9,.3,1.2);
+  max-height:92vh;
+  overflow-y:auto;
+}
+
+/* Tombol X — di DALAM box, pojok kanan atas */
+.modal-close-btn{
+  position:absolute;
+  top:12px;
+  right:12px;
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  background:var(--danger-color);
+  color:#fff;
+  border:3px solid var(--border-color);
+  box-shadow:3px 3px 0px var(--border-color);
+  cursor:pointer;
+  font-size:14px;
+  font-weight:900;
+  z-index:2;
+}
+.modal-close-btn:hover{
+  transform:translate(1px,1px);
+  box-shadow:2px 2px 0px var(--border-color);
+}
+.modal-close-btn:active{
+  transform:translate(3px,3px);
+  box-shadow:0 0 0 var(--border-color);
+}
+
+/* Badge atas */
+.modal-badge{
+  display:inline-block;
+  background:var(--accent-blue);
+  color:#000;
+  border:3px solid var(--border-color);
+  box-shadow:3px 3px 0px var(--border-color);
+  padding:7px 12px;
+  font-family:'Press Start 2P',monospace;
+  font-size:8px;
+  letter-spacing:.5px;
+  text-transform:uppercase;
+  margin-bottom:14px;
+}
+
+.modal-title{
+  margin:0 0 10px;
+  font-family:'Press Start 2P',monospace;
+  font-size:14px;
+  line-height:1.6;
+  text-transform:uppercase;
+  text-shadow:2px 2px 0px var(--accent-blue);
+}
+
+.modal-desc{
+  margin:0 0 18px;
+  color:#475569;
+  font-size:12px;
+  font-weight:600;
+  line-height:1.7;
+}
+
+/* Grup tombol */
+.popup-btn-group{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:12px;
+}
+
+/* Tombol pakai style .mc-btn bawaan index, cuma override warna */
+.mc-btn.btn-wa     { background-color:#25d366; color:#fff; }
+.mc-btn.btn-donate { background-color:#ff8a00; color:#fff; }  /* ORANGE */
+.mc-btn.btn-premium{ background-color:var(--danger-color); color:#fff; }  /* MERAH */
+.mc-btn.btn-close  { background-color:#000; color:#fff; }
+
+.mc-btn.btn-wa:hover,
+.mc-btn.btn-donate:hover,
+.mc-btn.btn-premium:hover,
+.mc-btn.btn-close:hover{
+  background-color:#fff;
+  color:#000;
+  box-shadow:4px 4px 0px var(--border-color), 0 0 12px var(--accent-blue);
+}
+
+/* Checkbox "jangan tampilkan lagi" */
+.modal-box .checkbox-container{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  margin-top:14px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+  color:#64748b;
+  cursor:pointer;
+  user-select:none;
+}
+.modal-box .checkbox-container input{
+  width:16px;
+  height:16px;
+  accent-color:var(--accent-blue);
+  cursor:pointer;
+  border:2px solid var(--border-color);
+}
+
+@media (max-width:380px){
+  .modal-box{padding:52px 16px 18px}
+  .modal-title{font-size:11px}
+  .modal-desc{font-size:11px}
+  .modal-badge{font-size:7px}
+  }
+</style>
+
+<style id="simple-ui-theme">
+:root {
+    --bg-color: #f5f7fb;
+    --card-bg: #ffffff;
+    --border-color: #e5e7eb;
+    --accent-blue: #2563eb;
+    --accent-glow: rgba(37, 99, 235, 0.15);
+    --text-dark: #111827;
+    --muted: #6b7280;
+    --success-color: #16a34a;
+    --warning-color: #f59e0b;
+    --danger-color: #dc2626;
+    --body-bg-image: none;
+}
+html.dark-mode {
+    --bg-color: #0f1115;
+    --card-bg: #171a21;
+    --border-color: #2b303b;
+    --accent-blue: #60a5fa;
+    --accent-glow: rgba(96, 165, 250, 0.16);
+    --text-dark: #f3f4f6;
+    --muted: #9ca3af;
+}
+* {
+    transition: background-color .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+body {
+    background: var(--bg-color);
+    color: var(--text-dark);
+    padding: 18px 12px 90px;
+}
+#page-login { display: none !important; }
+#page-dashboard { display: flex !important; justify-content: center; width: 100%; }
+#page-dashboard .mc-card {
+    max-width: 560px;
+    width: 100%;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    box-shadow: 0 10px 35px rgba(0,0,0,.07);
+    padding: 22px;
+    text-align: left;
+}
+html.dark-mode #page-dashboard .mc-card { box-shadow: 0 10px 35px rgba(0,0,0,.22); }
+.new-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 22px;
+}
+.new-topbar .dash-title {
+    justify-content: flex-start;
+    width: auto;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 19px;
+    font-weight: 800;
+    text-shadow: none;
+    color: var(--text-dark);
+}
+.new-subtitle { margin-top: 5px; color: var(--muted); font-size: 12px; }
+.theme-toggle {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--card-bg);
+    color: var(--text-dark);
+    cursor: pointer;
+    font-size: 16px;
+}
+.theme-toggle:hover { background: var(--accent-blue); color: #fff; }
+.dash-sub-row { display: none; }
+.greeting-text { display: none; }
+.limit-card, .result-panel, .history-item, .paket-info-current, .bayar-panel, .paket-card, .input-wrap, .emoji-chip {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+    border-radius: 12px;
+}
+.limit-card { padding: 15px; margin-bottom: 18px; }
+.limit-progress-bg {
+    border: 0;
+    border-radius: 99px;
+    overflow: hidden;
+    background: #e5e7eb;
+    height: 8px;
+}
+html.dark-mode .limit-progress-bg { background: #2b303b; }
+.limit-progress-fill { background: var(--accent-blue); box-shadow: none; }
+.form-label, .section-label, .result-panel-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-dark);
+    letter-spacing: .2px;
+}
+.input-wrap { box-shadow: none; overflow: hidden; }
+.input-wrap input { color: var(--text-dark); background: var(--card-bg); padding: 13px 12px; }
+.field-hint, .field-error, .emoji-count-text, .limit-countdown { color: var(--muted); }
+.mc-btn {
+    border: 0;
+    border-radius: 12px;
+    box-shadow: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px;
+    text-transform: none;
+    min-height: 46px;
+}
+.mc-btn:hover { transform: translateY(-1px); box-shadow: none; }
+#send-reaction-btn { background: var(--accent-blue); color: #fff; }
+#sidebar-open-btn, #sidebar-overlay, #sidebar-panel { display: none !important; }
+.modal-overlay { background: rgba(15, 17, 21, .55); backdrop-filter: blur(5px); }
+.modal-box {
+    background: var(--card-bg);
+    color: var(--text-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.18);
+    padding: 52px 20px 20px;
+}
+.modal-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    text-shadow: none;
+    font-size: 20px;
+    color: var(--text-dark);
+}
+.modal-desc { color: var(--muted); }
+.modal-badge {
+    background: rgba(37,99,235,.1);
+    color: var(--accent-blue);
+    border: 0;
+    box-shadow: none;
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+}
+.modal-close-btn {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+    border-radius: 9px;
+}
+.btn-wa { background: #22c55e !important; color: #fff !important; }
+.btn-close { background: #eef2f7 !important; color: #111827 !important; }
+html.dark-mode .btn-close { background: #252a33 !important; color: #f3f4f6 !important; }
+.checkbox-container { color: var(--muted) !important; }
+.app-footer { color: var(--muted); }
+@media (max-width: 480px) {
+    body { padding: 10px 10px 70px; }
+    #page-dashboard .mc-card { padding: 17px; border-radius: 15px; }
+    .new-topbar .dash-title { font-size: 17px; }
+}
+</style>
+
+
+<style id="polished-ui">
+:root{--p:#e11d48;--p2:#be123c;--bg:#f6f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--soft:#fff1f2;--shadow:0 12px 35px rgba(15,23,42,.08)}
+body{background:var(--bg)!important;color:var(--text)!important}
+body.dark{--bg:#090d14;--card:#111827;--text:#f8fafc;--muted:#94a3b8;--line:#263244;--soft:#35131d}
+#page-dashboard{max-width:780px!important;margin:auto!important;padding:16px!important}
+.polished-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 18px}
+.polished-brand{display:flex;align-items:center;gap:12px}
+.polished-icon{width:46px;height:46px;border-radius:15px;background:linear-gradient(135deg,var(--p),#fb7185);display:grid;place-items:center;color:#fff;font-size:22px;box-shadow:0 8px 20px rgba(225,29,72,.22)}
+.polished-title{font-size:20px;font-weight:800}.polished-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.polished-tools{display:flex;gap:8px}.polished-tools button{width:42px;height:42px;border:1px solid var(--line);border-radius:13px;background:var(--card);color:var(--text);cursor:pointer}
+.polished-hero{background:linear-gradient(135deg,#fff1f2,#fff 62%,#ffe4e6);border:1px solid #fecdd3;border-radius:24px;padding:22px;margin-bottom:16px;box-shadow:var(--shadow)}
+.dark .polished-hero{background:linear-gradient(135deg,#32121a,#111827);border-color:#5a2631}
+.polished-hero h2{margin:0 0 7px;font-size:24px}.polished-hero p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+.polished-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:15px;box-shadow:var(--shadow)}
+.polished-card h3{margin:0 0 13px;font-size:16px}
+.admin-modal{position:fixed;inset:0;background:rgba(2,6,23,.65);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:20px;z-index:99999}
+.admin-box{width:min(420px,100%);background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 25px 70px rgba(0,0,0,.25)}
+.admin-box h3{margin:0 0 6px}.admin-box p{color:var(--muted);font-size:13px}
+.admin-input{width:100%;box-sizing:border-box;padding:13px;border:1px solid var(--line);border-radius:13px;background:var(--bg);color:var(--text);outline:none;margin:8px 0 12px}
+.admin-btn{width:100%;border:0;border-radius:13px;padding:13px;font-weight:800;cursor:pointer;background:var(--p);color:white;margin-top:7px}
+.admin-btn.secondary{background:var(--soft);color:var(--p)}
+.admin-status{margin-top:12px;padding:12px;border-radius:13px;background:var(--bg);font-size:13px}
+.admin-close{position:absolute;right:14px;top:12px;border:0;background:transparent;color:var(--muted);font-size:22px;cursor:pointer}
+</style>
+
+<style id="entry-screen-style">
+#entry-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: #f5f7fb;
+}
+.entry-box {
+    width: min(420px, 100%);
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 24px;
+    padding: 28px;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, .12);
+    text-align: center;
+}
+.entry-box h1 { margin: 0 0 8px; font-size: 26px; }
+.entry-box p { margin: 0 0 22px; color: #64748b; font-size: 14px; }
+.entry-option {
+    width: 100%;
+    padding: 16px;
+    margin-top: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 800;
+}
+.entry-option small {
+    display: block;
+    margin-top: 5px;
+    color: #64748b;
+    font-weight: 500;
+}
+.entry-option.admin { border-color: #fecdd3; }
+.entry-option:hover { transform: translateY(-1px); }
+body.dark #entry-screen { background: #070b12; }
+body.dark .entry-box,
+body.dark .entry-option { background: #111827; color: #f8fafc; border-color: #243244; }
+body.dark .entry-box p,
+body.dark .entry-option small { color: #94a3b8; }
+#channel-alert {
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:100000;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    background:rgba(2,6,23,.55);
+}
+.channel-card {
+    width:min(420px,100%);
+    background:#fff;
+    border-radius:22px;
+    padding:24px;
+    box-shadow:0 20px 70px rgba(0,0,0,.25);
+}
+.channel-card h2 { margin:0 0 8px; }
+.channel-card p { color:#64748b; line-height:1.5; }
+.channel-card a {
+    display:block;
+    text-align:center;
+    padding:13px;
+    border-radius:14px;
+    background:#e11d48;
+    color:#fff;
+    text-decoration:none;
+    font-weight:800;
+    margin-top:16px;
+}
+.channel-card button {
+    width:100%;
+    margin-top:9px;
+    padding:12px;
+    border:0;
+    border-radius:14px;
+    background:#f1f5f9;
+    cursor:pointer;
+}
+
+.entry-bg {
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+    pointer-events:none;
+}
+.entry-bg::before,.entry-bg::after {
+    content:"";
+    position:absolute;
+    border-radius:50%;
+    filter:blur(10px);
+    opacity:.7;
+}
+.entry-bg::before {
+    width:280px;height:280px;
+    background:#fecdd3;
+    top:-100px;right:-80px;
+}
+.entry-bg::after {
+    width:240px;height:240px;
+    background:#dbeafe;
+    bottom:-90px;left:-70px;
+}
+.entry-box {
+    position:relative;
+    z-index:1;
+    overflow:hidden;
+}
+.entry-brand {
+    width:64px;height:64px;
+    margin:0 auto 14px;
+    border-radius:20px;
+    display:grid;
+    place-items:center;
+    font-size:30px;
+    color:#fff;
+    background:linear-gradient(135deg,#e11d48,#fb7185);
+    box-shadow:0 12px 30px rgba(225,29,72,.28);
+}
+.entry-option {
+    display:flex;
+    align-items:center;
+    gap:14px;
+    transition:.18s ease;
+}
+.entry-option:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(15,23,42,.08); }
+.entry-icon {
+    width:42px;height:42px;border-radius:13px;
+    display:grid;place-items:center;
+    background:#fff1f2;color:#e11d48;font-size:19px;
+    flex:none;
+}
+.entry-option.admin .entry-icon { background:#eff6ff;color:#2563eb; }
+.entry-copy { flex:1; }
+.entry-arrow { color:#94a3b8;font-size:18px; }
+#password-modal {
+    display:none; position:fixed; inset:0; z-index:100001;
+    align-items:center; justify-content:center; padding:24px;
+    background:rgba(2,6,23,.58);
+}
+.password-card {
+    width:min(400px,100%); background:#fff; border-radius:24px;
+    padding:24px; box-shadow:0 24px 80px rgba(0,0,0,.28);
+}
+.password-card h2 { margin:0 0 6px; }
+.password-card p { margin:0 0 18px; color:#64748b; font-size:14px; }
+.password-card input {
+    width:100%; box-sizing:border-box; padding:14px 15px;
+    border:1px solid #dbe1ea; border-radius:14px; outline:none;
+    font-size:15px;
+}
+.password-card input:focus { border-color:#e11d48; box-shadow:0 0 0 3px rgba(225,29,72,.1); }
+.password-error { min-height:20px; color:#e11d48; font-size:12px; margin-top:8px; }
+.password-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+.password-actions button { padding:13px; border:0; border-radius:14px; cursor:pointer; font-weight:800; }
+.password-cancel { background:#f1f5f9; }
+.password-submit { background:#e11d48; color:#fff; }
+body.dark .password-card { background:#111827; color:#f8fafc; }
+body.dark .password-card p { color:#94a3b8; }
+body.dark .password-card input { background:#0b1220; color:#fff; border-color:#243244; }
+
+</style>
+
+</head>
+<body>
+
+<div id="entry-screen">
+    <div class="entry-box">
+        <div class="entry-bg"></div>
+        <div class="entry-brand">⚡</div>
+        <h1>Reaction Channel</h1>
+        <p>Pilih jenis akses untuk melanjutkan.</p>
+
+        <button class="entry-option" id="free-user-btn" type="button">
+            <div class="entry-icon">👤</div>
+            <div class="entry-copy">Free User<small>2 token setiap 7 jam</small></div>
+            <div class="entry-arrow">›</div>
+        </button>
+
+        <button class="entry-option admin" id="admin-user-btn" type="button">
+            <div class="entry-icon">⚙️</div>
+            <div class="entry-copy">Admin User<small>Unlimited token · perlu sandi</small></div>
+            <div class="entry-arrow">›</div>
+        </button>
+    </div>
+</div>
+
+<div id="channel-alert">
+    <div class="channel-card">
+        <h2>Saluran WhatsApp Saya</h2>
+        <p>Silakan kunjungi saluran WhatsApp saya sebelum menggunakan website.</p>
+        <a id="channel-link" href="#" target="_blank" rel="noopener">Buka Saluran WhatsApp</a>
+        <button id="channel-close" type="button">Lanjutkan</button>
+    </div>
+</div>
+
+<div id="password-modal">
+    <div class="password-card">
+        <h2>Admin User</h2>
+        <p>Masukkan sandi admin untuk membuka akses unlimited.</p>
+        <input id="admin-password-input" type="password" placeholder="Masukkan sandi" autocomplete="off">
+        <div class="password-error" id="admin-password-error"></div>
+        <div class="password-actions">
+            <button class="password-cancel" id="admin-password-cancel" type="button">Batal</button>
+            <button class="password-submit" id="admin-password-submit" type="button">Masuk Admin</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ===================================================
+     SIDEBAR (HAMBURGER MENU)
+     ---------------------------------------------------
+     - #sidebar-open-btn : tombol ☰ pojok kiri atas, selalu
+       terlihat (position fixed, z-index 1000) di halaman manapun.
+     - #sidebar-overlay  : lapisan gelap di belakang panel,
+       klik di area ini (di luar panel) otomatis menutup sidebar.
+     - #sidebar-panel    : panel putih yang slide masuk dari kiri
+       (animasi 0.3s lewat class 'show', diatur di CSS #sidebar-panel).
+     Semua interaksi (buka/tutup) ditangani oleh fungsi
+     openSidebar() / closeSidebar() di SECTION SIDEBAR pada <script>.
+=================================================== -->
+
+  <!-- ===================================================
+     POPUP WELCOME / INFO
+=================================================== -->
+<div id="welcome-popup" class="modal-overlay">
+  <div class="modal-box">
+    <button class="modal-close-btn" onclick="closeWelcomePopup()" aria-label="Tutup">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <div class="modal-badge">SALURAN SAYA</div>
+    <h2 class="modal-title">SALURAN SAYA</h2>
+    <p class="modal-desc">
+      Ikuti saluran WhatsApp kami untuk mendapatkan informasi dan update terbaru.
+    </p>
+    <div class="popup-btn-group">
+      <a href="https://whatsapp.com/channel/0029Vb8wkiw89inmMKmI9a0X"
+         target="_blank" rel="noopener" class="mc-btn btn-wa">
+        <i class="fa-brands fa-whatsapp"></i> Buka Saluran
+      </a>
+    </div>
+    <button class="mc-btn btn-close" onclick="closeWelcomePopup()">
+      <i class="fa-solid fa-check"></i> Tutup
+    </button>
+    <label class="checkbox-container">
+      <input type="checkbox" id="no-show-again" onchange="toggleNoShow(this)">
+      <span>Jangan tampilkan lagi</span>
+    </label>
+  </div>
+</div>
+
+<button type="button" id="sidebar-open-btn" aria-label="Buka menu">☰</button>
+
+<div id="sidebar-overlay"></div>
+
+<div id="sidebar-panel">
+    <!-- Tombol ✕ untuk menutup sidebar -->
+    <button type="button" id="sidebar-close-btn" aria-label="Tutup menu">✕</button>
+
+    <!-- Foto profil -->
+    <img src="https://files.catbox.moe/ivioup.gif" alt="Profile" class="sidebar-profile-pic">
+
+    <!-- Nama pemilik channel -->
+    <div class="sidebar-owner-name">© MITZY</div>
+
+    <hr class="sidebar-divider">
+
+    <!-- Tombol WhatsApp -->
+    <a href="https://wa.me/6289673952771" target="_blank" rel="noopener" class="sidebar-btn sidebar-btn-wa">
+        <i class="fa-brands fa-whatsapp"></i> WhatsApp
+    </a>
+
+    <!-- Tombol Telegram -->
+    <a href="https://t.me/mitzy777" target="_blank" rel="noopener" class="sidebar-btn sidebar-btn-tele">
+        <i class="fa-brands fa-telegram"></i> Telegram
+    </a>
+
+    <!-- Tombol Donate -->
+    <a href="https://sociabuzz.com/mitzy_/donate" target="_blank" rel="noopener" class="sidebar-btn sidebar-btn-donate">
+        <i class="fa-solid fa-heart"></i> Donate
+    </a>
+
+<!-- Teks panjang di bawah garis -->
+<div style="text-align:center; margin:8px 0 10px;">
+    <p style="font-family:'Plus Jakarta Sans',sans-serif; font-size:9px; color:#475569; line-height:1.9; margin:0;">
+        ⚡ <strong>MITZY REACTION CHANNEL</strong><br>
+        Kirim reaction ke channel WhatsApp favoritmu dengan cepat & mudah!<br>
+        Cukup 3 langkah: masukin emoji, paste link channel, klik kirim.<br>
+        Reaction langsung terkirim dalam hitungan detik! 🚀
+    </p>
+    <p style="font-family:'Plus Jakarta Sans',sans-serif; font-size:9px; color:#475569; line-height:1.9; margin:8px 0 0;">
+        ❤️ Dukung kami dengan donasi agar layanan tetap gratis & terus berkembang.<br>
+        Setiap dukungan sangat berarti! Terima kasih 🙏
+    </p>
+</div>
+
+    <hr class="sidebar-divider">
+
+    <!-- Footer sidebar -->
+    <p class="sidebar-footer">⚡ Powered By Mitzy Reaction Ch v1.0</p>
+</div>
+
+<!-- ================= TOAST CONTAINER ================= -->
+<div id="toast-container"></div>
+
+<!-- ===================================================
+     HALAMAN LOGIN / REGISTER
+=================================================== -->
+<div id="page-login" class="page active">
+    <div class="mc-card">
+        <h1 class="header-title"><i class="fa-solid fa-bolt"></i> REACTION CHANNEL</h1>
+        <p class="sub-text">Masuk untuk mulai mengirim reaction ke channel WhatsApp.</p>
+
+        <!-- Garis pemisah antara subtitle dan form login. -->
+        <hr class="auth-divider">
+
+        <!-- ===== FORM LOGIN ===== -->
+        <form id="login-form" class="auth-form active">
+            <div class="form-group">
+                <label class="form-label" for="login-username">USERNAME</label>
+                <div class="input-wrap">
+                    <input type="text" id="login-username" autocomplete="username" placeholder="Username kamu" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="login-password">PASSWORD</label>
+                <div class="input-wrap">
+                    <input type="password" id="login-password" autocomplete="current-password" placeholder="Password kamu" required>
+                    <button type="button" class="input-icon-btn" id="login-toggle-pw" aria-label="Tampilkan password">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <div class="field-error" id="login-error"></div>
+            </div>
+
+            <label class="checkbox-row">
+                <input type="checkbox" id="remember-me">
+                Remember Me
+            </label>
+
+            <!-- ===================================================
+                 TOMBOL "LOGIN DENGAN GOOGLE"
+                 ---------------------------------------------------
+                 PERSIS DI ATAS tombol Login biasa, sesuai urutan:
+                 hr -> Username -> Password -> Remember Me ->
+                 Login dengan Google -> Tombol Login.
+                 Hanya tampil saat form LOGIN aktif (disembunyikan
+                 otomatis saat form REGISTER aktif lewat fungsi
+                 switchAuthForm() di <script>, id: 'google-login-block').
+                 Klik tombol ini memanggil handleGoogleLogin() yang
+                 menampilkan popup akun Google lewat Google Identity
+                 Services (google.accounts.id), lalu hasilnya ditukar
+                 ke Firebase Auth via signInWithCredential() di fungsi
+                 handleGoogleCredentialResponse().
+            =================================================== -->
+            <div id="google-login-block">
+                <button type="button" class="mc-btn google-login-btn" id="google-login-btn">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="">
+                    Login dengan Google
+                </button>
+            </div>
+
+            <button type="submit" class="mc-btn"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+
+            <p class="auth-switch-text">Belum punya akun? <a id="show-register-link">Daftar di sini</a></p>
+        </form>
+
+        <!-- ===== FORM REGISTER ===== -->
+        <form id="register-form" class="auth-form">
+            <div class="form-group">
+                <label class="form-label" for="register-username">USERNAME</label>
+                <div class="input-wrap">
+                    <input type="text" id="register-username" autocomplete="username" placeholder="Min. 3 karakter, unik" required>
+                </div>
+                <div class="field-error" id="reg-username-error"></div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-password">PASSWORD</label>
+                <div class="input-wrap">
+                    <input type="password" id="register-password" autocomplete="new-password" placeholder="Buat password kuat" required>
+                    <button type="button" class="input-icon-btn" id="register-password-toggle-pw" aria-label="Tampilkan password">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+
+                <!-- Indikator Kekuatan Password -->
+                <div class="strength-meter-wrap">
+                    <div class="strength-bar-bg">
+                        <div class="strength-bar-fill" id="strength-bar-fill"></div>
+                    </div>
+                    <div class="strength-label" id="strength-label">-</div>
+                </div>
+
+                <ul class="password-rules" id="password-rules">
+                    <li id="rule-length">Minimal 8 karakter</li>
+                    <li id="rule-upper">Huruf besar (A-Z)</li>
+                    <li id="rule-lower">Huruf kecil (a-z)</li>
+                    <li id="rule-number">Angka (0-9)</li>
+                    <li id="rule-special">Karakter spesial (!@#$...)</li>
+                </ul>
+                <div class="field-error" id="reg-password-error">Password belum memenuhi semua kriteria kekuatan.</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="register-confirm">KONFIRMASI PASSWORD</label>
+                <div class="input-wrap">
+                    <input type="password" id="register-confirm" autocomplete="new-password" placeholder="Ulangi password" required>
+                    <button type="button" class="input-icon-btn" id="register-confirm-toggle-pw" aria-label="Tampilkan password">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+                <div class="field-error" id="reg-confirm-error"></div>
+            </div>
+
+            <button type="submit" class="mc-btn"><i class="fa-solid fa-user-plus"></i> Daftar</button>
+
+            <p class="auth-switch-text">Sudah punya akun? <a id="show-login-link">Login di sini</a></p>
+        </form>
+    </div>
+</div>
+
+<!-- ===================================================
+     HALAMAN DASHBOARD
+=================================================== -->
+<div id="page-dashboard" class="page">
+    <div class="mc-card">
+
+        <!-- Header -->
+<div class="dash-header">
+    <div class="new-topbar">
+        <div>
+            <h1 class="dash-title"><i class="fa-solid fa-bolt"></i> REACTION CHANNEL</h1>
+            <p class="new-subtitle">Kirim reaction WhatsApp dengan cepat.</p>
+        </div>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Ganti tema">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </div>
+    
+    <!-- Baris baru: teks kiri, tombol kanan -->
+    <div class="dash-sub-row">
+        <p class="dash-tagline">Kirim reaction ke channel WhatsApp dengan cepat</p>
+        
+        <div class="dash-action-group">
+            <div class="badge-online"><span class="badge-dot"></span> ONLINE</div>
+            <button type="button" class="mc-btn secondary logout-btn" id="logout-btn">
+                <i class="fa-solid fa-right-from-bracket"></i> Logout
+            </button>
+            <button type="button" class="mc-btn beli-limit-btn" id="beli-limit-btn">
+                <i class="fa-solid fa-cart-shopping"></i> Beli Limit
+            </button>
+        </div>
+    </div>
+</div>
+
+        <p class="greeting-text" id="greeting-text" style="font-family: 'Press Start 2P', monospace; font-weight: 300; font-size: 9px;">
+    <i class="fa-solid fa-user" style="font-size:15px; color:#000; margin-right:7px;"></i> 
+    Hello, <span id="greeting-username">user</span>!
+</p>
+
+<!-- Limit / Kuota Harian -->
+<div class="limit-card">
+    <div class="limit-top-row">
+        <span style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 12px;">
+            <i class="fa-solid fa-coins" style="font-size:15px; color:#000; margin-right:5px;"></i>
+            Reaction Limit: <span id="limit-used">0</span>/<span id="limit-max">2</span> used
+        </span>
+    </div>
+    <div class="limit-progress-bg">
+        <div class="limit-progress-fill" id="limit-progress-fill"></div>
+    </div>
+    <div class="limit-countdown" id="limit-countdown" style="font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 600; font-size: 10px;">
+        Reset in: 0j 0m 0s
+    </div>
+</div>
+
+        <!-- Input Emoji -->
+        <div class="form-group">
+            <label class="form-label" for="emoji-input">EMOJI REACTION</label>
+            <div class="input-wrap">
+                <input type="text" id="emoji-input" placeholder="Masukan Emoji" autocomplete="off">
+            </div>
+            <p class="field-hint">Contoh: 🚀,☠️,😶‍🌫️,⚡</p>
+            <div class="field-error" id="emoji-error">Minimal 1 emoji</div>
+            <div class="emoji-preview" id="emoji-preview"></div>
+            <div class="emoji-count-text" id="emoji-count-text">0 emoji terdeteksi</div>
+        </div>
+
+        <!-- Input Channel URL -->
+        <div class="form-group">
+            <label class="form-label" for="channel-url-input">LINK CHANNEL WHATSAPP</label>
+            <div class="input-wrap">
+                <input type="text" id="channel-url-input" list="url-history-list" placeholder="https://whatsapp.com/channel/XXXXXXXX/100" autocomplete="off">
+                <i class="fa-solid fa-circle-check input-status-icon" id="url-status-icon"></i>
+            </div>
+            <datalist id="url-history-list"></datalist>
+            <p class="field-hint">Format wajib: https://whatsapp.com/channel/&lt;kode&gt;/&lt;angka&gt;</p>
+            <div class="field-error" id="url-error">Format link channel tidak valid</div>
+        </div>
+
+        <!-- ===================================================
+             GOOGLE reCAPTCHA v2 WIDGET
+             Diletakkan di antara input Channel URL dan tombol
+             "Kirim Reaction". User WAJIB mencentang "Saya bukan
+             robot" sebelum reaction bisa dikirim (divalidasi di
+             fungsi handleSendReaction()).
+        =================================================== -->
+        <div style="text-align:center; margin: 16px 0;">
+    <div class="g-recaptcha" data-sitekey="6LchTqAtAAAAAFkd0OVRzcU7vLY7mvRPylA4KEaV"></div>
+        </div>
+
+        <!-- Tombol Kirim -->
+        <button type="button" class="mc-btn" id="send-reaction-btn">
+            <i class="fa-solid fa-paper-plane"></i> <span id="send-btn-text">Kirim Reaction</span>
+        </button>
+
+                <!-- Hasil Response API -->
+        <div class="result-panel" id="result-panel">
+            <div class="result-panel-title"><i class="fa-solid fa-satellite-dish"></i> RESPONSE API</div>
+            <div class="result-row"><span><i class="fa-solid fa-thumbtack"></i> Target Channel</span><strong id="result-target">-</strong></div>
+            <div class="result-row"><span><i class="fa-solid fa-chart-simple"></i> Status</span><strong id="result-status">-</strong></div>
+            <div class="result-row"><span><i class="fa-solid fa-stopwatch"></i> Waktu Respon</span><strong id="result-time">-</strong></div>
+            <div class="result-row"><span><i class="fa-solid fa-gem"></i> Sisa Limit</span><strong id="result-remaining">-</strong></div>
+        </div>
+
+        <!-- History -->
+        <div class="history-section">
+            <span class="section-label"><i class="fa-solid fa-clock-rotate-left"></i> 5 REACTION TERAKHIR</span>
+            <div id="history-list"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ===================================================
+     HALAMAN BELI LIMIT OTOMATIS
+=================================================== -->
+<div id="page-beli-limit" class="page">
+    <div class="mc-card">
+
+        <button type="button" class="mc-btn beli-back-btn" id="beli-back-btn">
+            <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard
+        </button>
+
+        <h1 class="dash-title" style="margin-bottom:14px;"><i class="fa-solid fa-cart-shopping"></i> BELI LIMIT</h1>
+
+        <!-- Info limit saat ini -->
+        <div class="paket-info-current" id="beli-limit-info">
+            Limit saat ini: <span id="beli-limit-used">0</span>/<span id="beli-limit-max">2</span>
+        </div>
+
+        <!-- Grid paket, disembunyikan begitu user sudah memilih paket -->
+        <div id="paket-grid-wrap">
+            <div class="paket-grid" id="paket-grid"></div>
+        </div>
+
+        <!-- Detail pembayaran, muncul setelah user memilih paket -->
+<div class="bayar-panel" id="bayar-panel" style="display:none;">
+    <div class="bayar-panel-row"><span><i class="fa-solid fa-box"></i> Paket</span><strong id="bayar-paket-label">-</strong></div>
+    <div class="bayar-panel-row"><span><i class="fa-solid fa-plus"></i> Jumlah Limit</span><strong id="bayar-jumlah-limit">-</strong></div>
+    <div class="bayar-panel-row"><span><i class="fa-solid fa-tag"></i> Harga Paket</span><strong id="bayar-harga-dasar">-</strong></div>
+    <div class="bayar-panel-row" style="border-top: 2px solid #000; margin-top: 6px; padding-top: 8px;">
+        <span><i class="fa-solid fa-money-bill-wave"></i> Total Bayar</span><strong id="bayar-total">-</strong>
+    </div>
+    <div class="bayar-panel-row"><span><i class="fa-solid fa-satellite-dish"></i> Status</span><span id="bayar-status" class="bayar-status-badge bayar-status-pending">PENDING</span></div>
+
+    <div class="qris-img-wrap" id="qris-img-wrap" style="display:none;">
+        <img id="qris-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="QRIS Pembayaran">
+    </div>
+
+    <div class="bayar-countdown" id="bayar-countdown">Kadaluarsa dalam: 5:00</div>
+
+    <button type="button" class="mc-btn" id="manual-check-btn" style="margin-top: 10px; background: #fbbf24; font-size: 9px; padding: 10px;">
+    <i class="fa-solid fa-rotate"></i> Cek Status Pembayaran
+    </button>
+
+    <div style="
+        background: #fef2f2;
+        border: 2px solid #dc2626;
+        box-shadow: 3px 3px 0 #dc2626;
+        padding: 10px 12px;
+        margin: 12px 0;
+        text-align: left;
+    ">
+        <p style="
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            color: #dc2626;
+            line-height: 1.7;
+            margin: 0;
+        ">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+<strong>PERHATIAN:</strong> Total bayar sudah termasuk <strong>kode unik</strong> dari payment gateway.
+Transfer <strong>TEPAT</strong> sesuai nominal, jangan dibulatkan.
+Begitu pembayaran terverifikasi, <strong>limit otomatis bertambah!!</strong>
+        </p>
+    </div>
+
+    <div id="bayar-result-msg" style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:12px; margin:8px 0;"></div>
+
+    <button type="button" class="mc-btn secondary" id="bayar-lagi-btn">
+        <i class="fa-solid fa-rotate-left"></i> Bayar Lagi
+    </button>
+</div>
+
+<!-- ================= FOOTER ================= -->
+<div style="position:fixed;bottom:0;left:0;width:100%;text-align:center;padding:10px;pointer-events:none;">
+    <p class="app-footer">⚡ Powered By Mitzy Reaction Ch v1.0</p>
+</div>
+
+<script>
+/* ===================================================
+   SECTION 1: KONFIGURASI GLOBAL
+=================================================== */
+// PENTING: API_BASE_URL sekarang mengarah ke Backend Proxy Serverless (/api/rch),
+// BUKAN langsung ke API asli. Ini menyembunyikan endpoint asli dari network tab browser
+// dan memungkinkan penanganan CORS yang konsisten.
+const API_BASE_URL = '/api/rch';
+// Catatan: API_KEY tidak lagi disimpan sebagai konstanta terpisah yang "terlihat jelas".
+// Key tetap dikirim dari frontend (sesuai desain proxy yang diminta), namun proxy backend
+// yang benar-benar meneruskan request ke API asli (https://api.nexadev.my.id/api/rch).
+const DAILY_LIMIT = 2;
+const MIN_EMOJI = 1;
+const MAX_EMOJI = 4;
+const CHANNEL_URL_REGEX = /^https:\/\/whatsapp\.com\/channel\/[A-Za-z0-9]+\/\d+$/i;
+const SESSION_KEY = 'reactionSession';
+const USERS_KEY = 'reactionUsers';
+
+/* ===================================================
+   SECTION 2: UTILITIES (helper umum)
+=================================================== */
+// Mengamankan teks sebelum dimasukkan ke HTML.
+function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+}
+
+// Memotong teks panjang agar tampilan history tetap rapi.
+function truncateText(str, max) {
+    return str.length > max ? str.slice(0, max) + '…' : str;
+}
+
+// Mengubah timestamp menjadi format tanggal/waktu Indonesia.
+function formatDateTime(ts) {
+    const d = new Date(ts);
+    return d.toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+// Menghasilkan tanggal lokal hari ini untuk sistem limit harian.
+function getTodayStr() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+// Hash password pakai Web Crypto API bawaan browser (SHA-256),
+// supaya password TIDAK disimpan plain text di localStorage.
+async function hashPassword(plainText) {
+    const enc = new TextEncoder().encode(plainText);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', enc);
+    const hashHex = Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    console.log('[hashPassword] hash dihasilkan (panjang input:', plainText.length, 'karakter)');
+    return hashHex;
+}
+
+// Membuat token session acak.
+function generateToken() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+/* ===================================================
+   SECTION 2B: DEVICE FINGERPRINT (ANTI LIMIT BYPASS)
+   ---------------------------------------------------
+   Tujuan: mencegah user membuat akun baru cuma buat
+   dapetin limit reaction baru. Limit harian TIDAK lagi
+   diikat ke username, tapi ke "sidik jari" device/browser.
+   Jadi walaupun user daftar 100 akun di HP yang sama,
+   limitnya tetap cuma 2/hari untuk device tersebut.
+=================================================== */
+
+// Mengumpulkan beberapa karakteristik browser/device yang relatif
+// stabil (tidak berubah tiap reload) untuk dijadikan "sidik jari".
+// Catatan jujur: ini BUKAN fingerprint yang sempurna/anti-jebol 100%.
+// Ganti browser (Chrome -> Firefox) atau pakai mode Incognito akan
+// menghasilkan device ID yang berbeda. Tapi ini sudah jauh lebih
+// sulit dibypass dibanding sekadar daftar username baru berkali-kali,
+// karena mayoritas user awam tidak akan gonta-ganti browser/incognito
+// hanya demi 2 limit reaction tambahan.
+function getDeviceId() {
+    const components = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width,
+        screen.height,
+        navigator.platform,
+        navigator.hardwareConcurrency || 'unknown',
+        navigator.deviceMemory || 'unknown'
+    ];
+    // Gabungkan semua komponen jadi satu string mentah dulu.
+    const raw = components.join('|');
+    // Raw string ini lalu di-hash pendek (bukan kriptografis, cukup
+    // untuk keperluan ID yang ringkas & konsisten) supaya tidak
+    // menyimpan userAgent lengkap sebagai key localStorage.
+    return 'dev_' + simpleHash(raw);
+}
+
+// Hash sederhana (non-kriptografis, sinkron) khusus untuk memendekkan
+// device fingerprint mentah menjadi ID pendek yang konsisten.
+// Tidak pakai SHA-256 di sini karena fungsi ini butuh SYNCHRONOUS
+// (device ID dipakai langsung saat createSession(), tanpa await).
+function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const chr = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0; // konversi ke integer 32-bit
+    }
+    // Ubah ke string base36 positif supaya ringkas & mudah dibaca.
+    return Math.abs(hash).toString(36);
+}
+
+// Helper: ambil deviceId dari session yang sedang aktif, dengan
+// fallback ke getDeviceId() langsung kalau session lama belum
+// punya field deviceId (kompatibilitas mundur / backward compatible).
+function getDeviceIdFromSession(session) {
+    if (session && session.deviceId) return session.deviceId;
+    console.warn('[getDeviceIdFromSession] session tidak punya deviceId, fallback ke getDeviceId() langsung.');
+    return getDeviceId();
+}
+
+// Menampilkan potongan pendek device ID di UI dashboard, sekadar
+// biar user tahu device mereka "dikenali" (bukan untuk keamanan).
+function renderDeviceIdBadge(deviceId) {
+    const el = document.getElementById('device-id-badge');
+    if (!el) return;
+    // Tampilkan cuma sebagian biar tidak terlalu panjang di layar HP.
+    const shortId = deviceId.replace('dev_', '').slice(0, 10);
+    el.textContent = '📱 Device: ' + shortId;
+    el.title = deviceId; // full id kalau di-hover (desktop) / tap-hold
+}
+
+/* ===================================================
+   SECTION 3: TOAST NOTIFICATION (bottom-right)
+=================================================== */
+// Menampilkan notifikasi toast kepada pengguna.
+const TOAST_ICONS = {
+    success: '<i class="fa-solid fa-circle-check"></i>',
+    error: '<i class="fa-solid fa-circle-xmark"></i>',
+    info: '<i class="fa-solid fa-bullhorn"></i>',
+};
+
+function showToast(message, type) {
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = 'toast-item ' + (type || 'info');
+    
+    const icon = TOAST_ICONS[type] || TOAST_ICONS.info;
+    el.innerHTML = '<span>' + icon + ' ' + message + '</span>';
+    
+    container.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+
+    setTimeout(() => {
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 300);
+    }, 3800);
+}
+
+/* ===================================================
+   SECTION 4: PENYIMPANAN USER (localStorage)
+=================================================== */
+// Mengambil daftar user dari localStorage dengan fallback aman.
+// Mengambil seluruh data pengguna dari localStorage.
+function getUsers() {
+    try {
+        return JSON.parse(localStorage.getItem(USERS_KEY)) || [];
+    } catch (e) {
+        return [];
+    }
+}
+
+// Menyimpan daftar user ke localStorage.
+// Menyimpan seluruh data pengguna ke localStorage.
+function saveUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+// Mencari user secara case-insensitive.
+// Mencari pengguna berdasarkan username tanpa membedakan huruf besar/kecil.
+function findUserByUsername(username) {
+    return getUsers().find((u) => u.username.toLowerCase() === username.toLowerCase());
+}
+
+/* ===================================================
+   SECTION 5: PASSWORD STRENGTH METER
+=================================================== */
+// Mengecek seluruh aturan kekuatan password.
+function getPasswordChecks(pw) {
+    return {
+        length: pw.length >= 8,
+        upper: /[A-Z]/.test(pw),
+        lower: /[a-z]/.test(pw),
+        number: /[0-9]/.test(pw),
+        special: /[^A-Za-z0-9]/.test(pw)
+    };
+}
+
+// Mengembalikan true jika semua aturan password terpenuhi.
+function isPasswordStrong(pw) {
+    const c = getPasswordChecks(pw);
+    return c.length && c.upper && c.lower && c.number && c.special;
+}
+
+// Menghitung level dan persentase kekuatan password.
+function getStrengthInfo(pw) {
+    const c = getPasswordChecks(pw);
+    const score = Object.values(c).filter(Boolean).length;
+    if (!pw) return { label: '-', color: '#e2e8f0', width: '0%' };
+    if (score <= 2) return { label: 'Weak', color: 'var(--danger-color)', width: '20%' };
+    if (score === 3) return { label: 'Medium', color: 'var(--warning-color)', width: '50%' };
+    if (score === 4) return { label: 'Strong', color: '#0284c7', width: '75%' };
+    return { label: 'Very Strong', color: 'var(--success-color)', width: '100%' };
+}
+
+// Memperbarui progress bar dan checklist password.
+function updatePasswordStrengthUI(pw) {
+    const checks = getPasswordChecks(pw);
+    const info = getStrengthInfo(pw);
+
+    const fill = document.getElementById('strength-bar-fill');
+    const label = document.getElementById('strength-label');
+    fill.style.width = info.width;
+    fill.style.background = info.color;
+    label.textContent = info.label;
+    label.style.color = info.color;
+
+    toggleRule('rule-length', checks.length);
+    toggleRule('rule-upper', checks.upper);
+    toggleRule('rule-lower', checks.lower);
+    toggleRule('rule-number', checks.number);
+    toggleRule('rule-special', checks.special);
+}
+
+// Mengubah status visual aturan password.
+function toggleRule(id, met) {
+    document.getElementById(id).classList.toggle('met', met);
+}
+
+/* ===================================================
+   SECTION 6: TOGGLE SHOW/HIDE PASSWORD
+=================================================== */
+// Memasang tombol show/hide password pada input.
+function bindPasswordToggle(buttonId, inputId) {
+    const btn = document.getElementById(buttonId);
+    const input = document.getElementById(inputId);
+    btn.addEventListener('click', () => {
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        btn.innerHTML = isHidden ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
+    });
+}
+
+/* ===================================================
+   SECTION 7: TOGGLE LOGIN <-> REGISTER
+   Fungsi ini SATU-SATUNYA tempat yang mengatur form mana
+   yang tampil. Dipanggil oleh:
+     - klik link "Daftar di sini" / "Login di sini"
+     - setelah register sukses (otomatis balik ke login)
+   Pakai style.display secara LANGSUNG (bukan visibility/opacity)
+   supaya form yang tidak aktif benar-benar hilang dari layout,
+   sekaligus tetap menjaga class .active untuk konsistensi CSS.
+=================================================== */
+// Toggle login/register memakai display block/none dan class active.
+function switchAuthForm(target) {
+    console.log('[switchAuthForm] switching to:', target);
+
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    // BARU: blok tombol "Login dengan Google" — hanya relevan di form
+    // login, jadi disembunyikan otomatis saat form register aktif.
+    const googleLoginBlock = document.getElementById('google-login-block');
+
+    if (!loginForm || !registerForm) {
+        console.error('[switchAuthForm] form element tidak ditemukan di DOM!');
+        return;
+    }
+
+    if (target === 'register') {
+        loginForm.style.display = 'none';
+        loginForm.classList.remove('active');
+
+        registerForm.style.display = 'block';
+        registerForm.classList.add('active');
+
+        if (googleLoginBlock) googleLoginBlock.style.display = 'none';
+    } else {
+        registerForm.style.display = 'none';
+        registerForm.classList.remove('active');
+
+        loginForm.style.display = 'block';
+        loginForm.classList.add('active');
+
+        if (googleLoginBlock) googleLoginBlock.style.display = 'block';
+    }
+
+    console.log('[switchAuthForm] login display =', loginForm.style.display, '| register display =', registerForm.style.display);
+}
+
+/* ===================================================
+   SECTION 8: REGISTER
+   e.preventDefault() WAJIB dipanggil paling awal supaya
+   browser tidak reload halaman saat form di-submit.
+=================================================== */
+// Memproses pendaftaran akun baru dan menyimpan kredensial secara aman.
+async function handleRegister(e) {
+    // Menangani submit register tanpa reload halaman dan dengan try-catch.
+    e.preventDefault();
+    console.log('[handleRegister] submit terdeteksi');
+
+    try {
+        const usernameInput = document.getElementById('register-username');
+        const passwordInput = document.getElementById('register-password');
+        const confirmInput = document.getElementById('register-confirm');
+        const usernameError = document.getElementById('reg-username-error');
+        const passwordError = document.getElementById('reg-password-error');
+        const confirmError = document.getElementById('reg-confirm-error');
+
+        usernameError.classList.remove('show');
+        passwordError.classList.remove('show');
+        confirmError.classList.remove('show');
+
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        const confirm = confirmInput.value;
+
+        console.log('[handleRegister] username:', username);
+
+        if (username.length < 3 || username.length > 30) {
+            usernameError.textContent = 'Username minimal 3 dan maksimal 30 karakter.';
+            usernameError.classList.add('show');
+            return;
+        }
+
+        console.log('[handleRegister] username valid:', username);
+
+        if (findUserByUsername(username)) {
+            usernameError.textContent = 'Username sudah dipakai, pilih yang lain.';
+            usernameError.classList.add('show');
+            return;
+        }
+
+        if (!isPasswordStrong(password)) {
+            passwordError.textContent = 'Password wajib minimal 8 karakter, huruf besar, huruf kecil, angka, dan karakter spesial.';
+            passwordError.classList.add('show');
+            showToast('Password belum memenuhi semua kriteria kekuatan.', 'error');
+            return;
+        }
+
+        if (password !== confirm) {
+            confirmError.textContent = 'Konfirmasi password tidak cocok.';
+            confirmError.classList.add('show');
+            return;
+        }
+
+        const hashedPassword = await hashPassword(password);
+        const users = getUsers();
+        users.push({
+            username,
+            password: hashedPassword,
+            createdAt: Date.now()
+        });
+        saveUsers(users);
+
+        console.log('[handleRegister] registrasi sukses:', username);
+        showToast('Registrasi berhasil! Silakan login.', 'success');
+
+        document.getElementById('register-form').reset();
+        updatePasswordStrengthUI('');
+        document.getElementById('login-username').value = username;
+        switchAuthForm('login');
+    } catch (error) {
+        console.error('[handleRegister] error:', error);
+        showToast('Terjadi kesalahan saat registrasi.', 'error');
+    }
+}
+
+/* ===================================================
+   SECTION 9: LOGIN & SESSION
+   e.preventDefault() WAJIB dipanggil paling awal supaya
+   browser tidak reload halaman saat form di-submit.
+=================================================== */
+async function handleLogin(e) {
+    // Menangani submit login, hashing SHA-256, pembuatan session, dan redirect dashboard.
+    e.preventDefault();
+    console.log('[handleLogin] submit terdeteksi');
+
+    const loginError = document.getElementById('login-error');
+    loginError.classList.remove('show');
+
+    try {
+        const usernameInput = document.getElementById('login-username');
+        const passwordInput = document.getElementById('login-password');
+        const rememberInput = document.getElementById('remember-me');
+
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+
+        console.log('[handleLogin] username:', username);
+
+        const user = findUserByUsername(username);
+        console.log('[handleLogin] user ditemukan di database:', user);
+
+        if (!user) {
+            console.log('[handleLogin] password match: false');
+            loginError.textContent = 'Username atau password salah.';
+            loginError.classList.add('show');
+            return;
+        }
+
+        const hashedInput = await hashPassword(password);
+        const passwordMatch = hashedInput === user.password;
+        console.log('[handleLogin] password match:', passwordMatch);
+
+        if (!passwordMatch) {
+            loginError.textContent = 'Username atau password salah.';
+            loginError.classList.add('show');
+            return;
+        }
+
+        createSession(user.username, rememberInput.checked);
+        console.log('[handleLogin] login sukses, redirect ke dashboard');
+
+        document.getElementById('login-form').reset();
+        showToast('Login berhasil! Selamat datang, ' + user.username + '.', 'success');
+        showDashboardPage();
+    } catch (error) {
+        console.error('[handleLogin] error:', error);
+        loginError.textContent = '❌ Terjadi kesalahan saat login. Silakan coba lagi.';
+        loginError.classList.add('show');
+        showToast('Login gagal karena terjadi kesalahan.', 'error');
+    }
+}
+
+// Session disimpan di localStorage dengan key 'reactionSession'.
+// Remember Me = 30 hari, tanpa Remember Me = 1 hari.
+// Membuat dan menyimpan session login dengan masa berlaku.
+function createSession(username, remember) {
+    const now = Date.now();
+    const durationMs = (remember ? 30 : 1) * 24 * 60 * 60 * 1000;
+    const session = {
+        username,
+        token: generateToken(),
+        loginTime: now,
+        expires: now + durationMs,
+        // ANTI LIMIT BYPASS: simpan device fingerprint di dalam session.
+        // Ini yang nantinya dipakai untuk cek & simpan limit harian,
+        // BUKAN username, supaya bikin akun baru tidak reset limit.
+        deviceId: getDeviceId()
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    console.log('[createSession] session tersimpan, deviceId:', session.deviceId, '| expires:', new Date(session.expires).toLocaleString('id-ID'));
+}
+
+// Membaca, memvalidasi, dan membersihkan session yang kedaluwarsa.
+function getValidSession() {
+    try {
+        const raw = localStorage.getItem(SESSION_KEY);
+        if (!raw) {
+            console.log('[getValidSession] tidak ada session di localStorage.');
+            return null;
+        }
+        const session = JSON.parse(raw);
+        if (!session || !session.expires || session.expires < Date.now()) {
+            console.log('[getValidSession] session ditemukan tapi sudah kadaluarsa, dihapus.');
+            localStorage.removeItem(SESSION_KEY);
+            return null;
+        }
+        console.log('[getValidSession] session valid untuk user:', session.username);
+        return session;
+    } catch (e) {
+        console.error('[getValidSession] gagal parse session:', e);
+        return null;
+    }
+}
+
+// Menghapus session dan kembali ke halaman login.
+function handleLogout() {
+    localStorage.removeItem(SESSION_KEY);
+    stopCountdownTimer();
+    showToast('Kamu telah logout.', 'info');
+    showLoginPage();
+}
+
+/* ===================================================
+   SECTION 9B: LOGIN DENGAN GOOGLE
+   (GOOGLE IDENTITY SERVICES + firebase signInWithCredential)
+   ---------------------------------------------------
+   GANTI TOTAL dari signInWithPopup()/signInWithRedirect().
+   ---------------------------------------------------
+   KENAPA DIGANTI: signInWithPopup() & signInWithRedirect() Firebase
+   sama-sama butuh iframe tersembunyi yang menunjuk ke authDomain
+   (rchmi-7cf0b.firebaseapp.com) untuk menitipkan status login,
+   lalu dibaca kembali oleh halaman utama (domain Vercel kamu).
+   Karena authDomain BEDA ORIGIN dari domain app, penitipan status
+   ini butuh akses storage lintas-domain — dan browser HP modern
+   (Chrome Android storage partitioning, Firefox Total Cookie
+   Protection) makin sering MEMBLOKIR ini, makanya muncul error
+   "Unable to process request due to missing initial state".
+
+   SOLUSI INI: pakai Google Identity Services (GIS) — SDK resmi
+   Google yang berjalan LANGSUNG di domain accounts.google.com,
+   tanpa lewat authDomain Firebase sama sekali. GIS mengembalikan
+   Google ID Token, lalu token itu ditukar ke Firebase Auth lewat
+   signInWithCredential() — TIDAK ADA popup/redirect Firebase,
+   TIDAK ADA iframe lintas-domain, jadi error di atas tidak akan
+   muncul lagi.
+
+   WAJIB: ganti firebaseConfig di bawah ini dengan konfigurasi
+   project Firebase kamu sendiri (Firebase Console -> Project
+   Settings -> General -> "Your apps" -> SDK setup and
+   configuration), dan aktifkan provider "Google" di
+   Authentication -> Sign-in method sebelum tombol ini berfungsi.
+=================================================== */
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBrgax7dDSjMDKBj0kz3uTLNuGAfx1HEMw",
+  authDomain: "rchmi-7cf0b.firebaseapp.com",
+  projectId: "rchmi-7cf0b",
+  storageBucket: "rchmi-7cf0b.firebasestorage.app",
+  messagingSenderId: "832989061240",
+  appId: "1:832989061240:web:707089b9510c973c27cd8d",
+  measurementId: "G-PGPQEMYKDJ"
+};
+
+// BARU: Client ID OAuth Google, dipakai khusus oleh Google Identity
+// Services (GIS) — bukan oleh Firebase SDK. Diambil dari Google
+// Cloud Console -> APIs & Services -> Credentials -> "Web client
+// (auto created by Google Service)" pada project Firebase yang sama.
+const GOOGLE_CLIENT_ID = "832989061240-vnkiu5dcss0rsq507bgq0sg9umedlg1j.apps.googleusercontent.com";
+
+// Inisialisasi Firebase (SDK compat). Dibungkus try-catch supaya
+// kalau config belum diisi/salah, seluruh script TIDAK ikut
+// berhenti (sama seperti prinsip penanganan error di bagian lain
+// file ini). googleAuthProvider TIDAK dipakai lagi untuk memicu
+// popup/redirect, hanya dipakai GoogleAuthProvider.credential()
+// di bawah untuk membungkus ID Token dari GIS.
+try {
+    firebase.initializeApp(firebaseConfig);
+    console.log('[firebase] inisialisasi sukses.');
+} catch (e) {
+    console.error('[firebase] gagal inisialisasi, cek firebaseConfig:', e);
+}
+
+// Menangani hasil login Google yang sukses (dipakai oleh callback
+// Google Identity Services di handleGoogleLogin() di bawah).
+// Alur: ambil data user Google -> kalau username (dipakai dari
+// email) belum ada di 'reactionUsers', buat akun baru -> buat
+// session -> redirect ke dashboard (persis seperti login biasa).
+function processGoogleAuthUser(googleUser) {
+    const username = googleUser.email;
+
+    let user = findUserByUsername(username);
+    if (!user) {
+        // Buat user baru di localStorage (kalau belum ada).
+        // password diisi null karena akun Google tidak pernah
+        // login lewat form username/password.
+        const users = getUsers();
+        user = {
+            username,
+            password: null,
+            provider: 'google',
+            displayName: googleUser.displayName || username,
+            createdAt: Date.now()
+        };
+        users.push(user);
+        saveUsers(users);
+        console.log('[processGoogleAuthUser] akun baru dibuat untuk:', username);
+    }
+
+    // Buat session (Remember Me otomatis aktif untuk login Google).
+    createSession(user.username, true);
+    showToast('Login dengan Google berhasil! Selamat datang, ' + (user.displayName || user.username) + '.', 'success');
+    showDashboardPage();
+}
+
+// BARU: dipanggil oleh Google Identity Services setelah user selesai
+// pilih akun Google di popup/One Tap milik Google sendiri.
+// response.credential berisi Google ID Token (JWT) — token ini
+// ditukar ke kredensial Firebase lewat GoogleAuthProvider.credential(),
+// lalu login ke Firebase Auth lewat signInWithCredential() (BUKAN
+// signInWithPopup/signInWithRedirect, jadi tidak lewat authDomain
+// sama sekali).
+async function handleGoogleCredentialResponse(response) {
+    console.log('[handleGoogleCredentialResponse] menerima ID token dari Google');
+    try {
+        const credential = firebase.auth.GoogleAuthProvider.credential(response.credential);
+        const result = await firebase.auth().signInWithCredential(credential);
+        console.log('[handleGoogleCredentialResponse] login Google sukses:', result.user.email);
+        processGoogleAuthUser(result.user);
+    } catch (error) {
+        console.error('[handleGoogleCredentialResponse] error:', error);
+        showToast('Login dengan Google gagal. Coba lagi.', 'error');
+    }
+}
+
+// Menangani klik tombol "Login dengan Google".
+// GANTI: signInWithPopup()/signInWithRedirect() Firebase -> Google
+// Identity Services (google.accounts.id). Fungsi ini HANYA memicu
+// popup akun Google milik Google sendiri (google.accounts.id.prompt());
+// hasil loginnya ditangani oleh handleGoogleCredentialResponse() di
+// atas lewat callback, bukan lewat await di sini.
+function handleGoogleLogin() {
+    console.log('[handleGoogleLogin] tombol Login dengan Google diklik');
+
+    if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) {
+        showToast('Google Identity Services belum dimuat. Cek koneksi internet & reload halaman.', 'error');
+        return;
+    }
+
+    google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredentialResponse
+    });
+
+    // Munculkan popup pilih akun Google (One Tap / popup akun),
+    // 100% berjalan di domain accounts.google.com, tidak lewat
+    // authDomain Firebase sama sekali.
+    google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.warn('[handleGoogleLogin] prompt Google tidak muncul:', notification.getNotDisplayedReason ? notification.getNotDisplayedReason() : notification);
+            showToast('Popup Google tidak muncul. Pastikan browser tidak memblokir popup accounts.google.com.', 'error');
+        }
+    });
+}
+
+/* ===================================================
+   SECTION 10: NAVIGASI HALAMAN
+=================================================== */
+// Menampilkan halaman autentikasi dan form login.
+function showLoginPage() {
+    document.getElementById('page-dashboard').classList.remove('active');
+    document.getElementById('page-beli-limit').classList.remove('active');
+    document.getElementById('page-login').classList.add('active');
+    switchAuthForm('login');
+
+    // BARU: sidebar HANYA muncul di dashboard — sembunyikan tombol ☰
+    // dan tutup panel sidebar (kalau sedang terbuka) saat kembali
+    // ke halaman login/register.
+    document.getElementById('sidebar-open-btn').classList.remove('visible');
+    closeSidebar();
+}
+
+// Menampilkan dashboard berdasarkan session aktif.
+function showDashboardPage() {
+    const session = getValidSession();
+    if (!session) { showLoginPage(); return; }
+
+    document.getElementById('page-login').classList.remove('active');
+    document.getElementById('page-beli-limit').classList.remove('active');
+    document.getElementById('page-dashboard').classList.add('active');
+    document.getElementById('greeting-username').textContent = session.username;
+
+    // BARU: tombol ☰ sidebar HANYA muncul di halaman dashboard.
+    document.getElementById('sidebar-open-btn').classList.add('visible');
+
+    // CEK BROADCAST MESSAGE (BARU): tampilkan toast kalau admin baru
+    // saja mengirim pesan broadcast yang belum pernah dilihat user ini.
+    checkBroadcastMessage();
+
+    recoverPendingTransactions();
+
+    resetDashboardInputs();
+    // ANTI LIMIT BYPASS: pemakaian limit di-refresh berdasarkan deviceId.
+    // Username tetap dikirim supaya bonus limit dari admin ikut terhitung.
+    const deviceId = getDeviceIdFromSession(session);
+    refreshLimitUI(deviceId, session.username);
+    refreshUrlHistory(session.username);
+    renderHistory(session.username);
+    startCountdownTimer();
+}
+
+// BARU: pindah dari dashboard ke halaman Beli Limit (halaman terpisah,
+// bukan modal, sesuai permintaan). Dipanggil dari tombol #beli-limit-btn.
+function showBeliLimitPage() {
+    const session = getValidSession();
+    if (!session) { showLoginPage(); return; }
+
+    document.getElementById('page-dashboard').classList.remove('active');
+    document.getElementById('page-beli-limit').classList.add('active');
+
+    recoverPendingTransactions();
+
+    // Tampilkan info limit saat ini (X/2) di atas grid paket, dihitung
+    // ulang dari fungsi yang SAMA dipakai dashboard (tidak menyentuh
+    // logika anti-bypass, cuma membaca nilainya).
+    const deviceId = getDeviceIdFromSession(session);
+    const data = getLimitData(deviceId);
+    const effectiveMax = getEffectiveMaxLimit(session.username);
+    document.getElementById('beli-limit-used').textContent = data.count;
+    document.getElementById('beli-limit-max').textContent = effectiveMax === Infinity ? '∞' : effectiveMax;
+
+    renderPaketGrid();
+    resetPayment();
+}
+
+// BARU: kembali dari halaman Beli Limit ke dashboard.
+function backToDashboard() {
+    stopPaymentPolling();
+    document.getElementById('page-beli-limit').classList.remove('active');
+    document.getElementById('page-dashboard').classList.add('active');
+    // Refresh angka limit dashboard, siapa tahu baru saja bertambah.
+    const session = getValidSession();
+    if (session) {
+        refreshLimitUI(getDeviceIdFromSession(session), session.username);
+    }
+}
+
+// Mengosongkan input dashboard ketika dashboard dibuka.
+function resetDashboardInputs() {
+    document.getElementById('emoji-input').value = '';
+    document.getElementById('channel-url-input').value = '';
+    document.getElementById('emoji-error').classList.remove('show');
+    document.getElementById('url-error').classList.remove('show');
+    document.getElementById('url-status-icon').className = 'fa-solid fa-circle-check input-status-icon';
+    document.getElementById('emoji-preview').innerHTML = '';
+    document.getElementById('emoji-count-text').textContent = '0 emoji terdeteksi';
+    document.getElementById('result-panel').classList.remove('show');
+
+    // Reset widget reCAPTCHA juga saat dashboard dibuka ulang (misal
+    // habis logout/login lagi), dibungkus try/catch karena script
+    // reCAPTCHA (async defer) mungkin belum sempat siap saat ini
+    // dipanggil pertama kali.
+    try {
+        if (window.grecaptcha && typeof grecaptcha.reset === 'function') {
+            grecaptcha.reset();
+        }
+    } catch (e) {
+        console.warn('[resetDashboardInputs] grecaptcha belum siap, skip reset.', e);
+    }
+}
+
+/* ===================================================
+   SECTION 11: LIMIT / KUOTA HARIAN + COUNTDOWN
+   ---------------------------------------------------
+   PENTING (ANTI LIMIT BYPASS): parameter di bawah ini
+   sengaja dinamai "deviceId", BUKAN "username" lagi.
+   Limit disimpan per-DEVICE, jadi bikin akun baru dengan
+   username lain TIDAK memberi limit baru selama device
+   (browser/HP) yang dipakai tetap sama.
+=================================================== */
+// Mengambil limit harian berdasarkan DEVICE ID, reset otomatis saat tanggal berubah.
+// Nilai ini adalah PEMAKAIAN (berapa reaction yang sudah dikirim hari ini),
+// BUKAN batas maksimalnya — batas maksimal dihitung di getEffectiveMaxLimit().
+function getLimitData(deviceId) {
+    const key = 'reactionLimit_' + deviceId;
+    const today = getTodayStr();
+    try {
+        // Key localStorage memakai deviceId, bukan username, supaya
+        // semua akun yang login dari device yang sama berbagi 1 kuota.
+        const raw = localStorage.getItem(key);
+        console.log('[getLimitData] key:', key, '| raw:', raw); // ← DEBUG
+        if (!raw) return { date: today, count: 0 };
+        const parsed = JSON.parse(raw);
+        if (!(typeof window.isReactionAdmin === 'function' && window.isReactionAdmin())) {
+            const windowStart = Number(parsed.windowStart) || 0;
+            if (!windowStart || (Date.now() - windowStart) >= (7 * 60 * 60 * 1000)) {
+                return { date: today, count: 0, windowStart: 0 };
+            }
+        }
+        return parsed;
+    } catch (e) {
+        console.error('[getLimitData] gagal parse, key:', key, e); // ← DEBUG
+        return { date: today, count: 0 };
+    }
+}
+
+// Menyimpan data limit harian berdasarkan DEVICE ID.
+function saveLimitData(deviceId, data) {
+    const key = 'reactionLimit_' + deviceId;
+    localStorage.setItem(key, JSON.stringify(data));
+    console.log('[saveLimitData] key:', key, 'data:', data); // ← DEBUG
+}
+
+// Menambah pemakaian limit (per DEVICE ID) dengan batas maksimum harian EFEKTIF
+// (DAILY_LIMIT + bonus dari admin untuk username yang sedang login).
+// Inilah inti anti-bypass: mau login pakai username apapun, selama
+// deviceId sama, counter yang dinaikkan tetap counter device yang sama.
+function incrementLimit(deviceId, username) {
+    if (typeof window.isReactionAdmin === 'function' && window.isReactionAdmin()) {
+        return getLimitData(deviceId);
+    }
+
+    const data = getLimitData(deviceId);
+    const effectiveMax = getEffectiveMaxLimit(username);
+
+    if (!data.windowStart) {
+        data.windowStart = Date.now();
+    }
+
+    data.count = Math.min(data.count + 1, effectiveMax);
+    saveLimitData(deviceId, data);
+    console.log('[incrementLimit] limit device', deviceId, 'sekarang:', data.count, '/', effectiveMax);
+    return data;
+}
+
+/* ===================================================
+   SECTION 11.1: BONUS LIMIT DARI ADMIN (PER USERNAME)
+   ---------------------------------------------------
+   PENTING (SYNC ADMIN <-> USER):
+   Admin panel (admin.html) menyimpan limit tambahan yang diberikan ke
+   seorang USER (bukan device) di key localStorage:
+       'reactionLimit_' + username
+   Key ini SENGAJA berbeda & terpisah dari key pemakaian per-device di
+   atas ('reactionLimit_' + deviceId) — supaya fitur anti-limit-bypass
+   (limit dilacak per device) tetap jalan, TAPI bonus yang diberikan
+   admin ke akun tertentu tetap kelihatan & berpengaruh di dashboard.
+
+   Limit total yang berlaku hari ini = DAILY_LIMIT + bonus(username).
+=================================================== */
+// Mengambil data BONUS LIMIT seorang user (diberikan lewat admin panel).
+// Format & key HARUS SAMA PERSIS dengan admin.html: 'reactionLimit_' + username.
+function getBonusLimitData(username) {
+    const key = 'reactionLimit_' + username;
+    const today = getTodayStr();
+    try {
+        const raw = localStorage.getItem(key);
+        console.log('[getBonusLimitData] key:', key, '| raw:', raw); // ← DEBUG
+        if (!raw) return { date: today, count: 0 };
+        const parsed = JSON.parse(raw);
+        if (parsed.date !== today) return { date: today, count: 0 };
+        return parsed;
+    } catch (e) {
+        console.error('[getBonusLimitData] gagal parse, key:', key, e); // ← DEBUG
+        return { date: today, count: 0 };
+    }
+}
+
+      // ===================================================
+// BONUS PERMANEN (HASIL BELI LIMIT) — GAK RESET TIAP HARI
+// ===================================================
+// Key TERPISAH dari limit harian, jadi beli limit sekali
+// = bonus permanen yang gak ilang walaupun tengah malam.
+// Bonus ini cuma "habis" kalau dipakai (pemakaian harian naik).
+function getBonusPermanent(username) {
+    const key = 'reactionBonus_' + username;
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return 0;
+        const parsed = JSON.parse(raw);
+        return Number(parsed.total) || 0;
+    } catch (e) {
+        console.error('[getBonusPermanent] gagal parse:', e);
+        return 0;
+    }
+}
+
+function setBonusPermanent(username, total) {
+    const key = 'reactionBonus_' + username;
+    localStorage.setItem(key, JSON.stringify({ total: Number(total) || 0 }));
+    console.log('[setBonusPermanent]', username, '->', total);
+}
+
+function addBonusPermanent(username, tambahan) {
+    const current = getBonusPermanent(username);
+    const baru = current + Number(tambahan);
+    setBonusPermanent(username, baru);
+    console.log('[addBonusPermanent]', username, '+', tambahan, '=', baru);
+    return baru;
+}
+
+// Menghitung limit maksimal EFEKTIF untuk seorang user hari ini:
+// limit dasar (DAILY_LIMIT) + bonus limit yang diberikan admin untuk username-nya.
+function getEffectiveMaxLimit(username) {
+    if (typeof window.isReactionAdmin === 'function' && window.isReactionAdmin()) {
+        return Infinity;
+    }
+
+    const bonusPermanent = getBonusPermanent(username);
+    const effectiveMax = 2 + bonusPermanent;
+    console.log('[getEffectiveMaxLimit] username:', username, '| DAILY_LIMIT:', DAILY_LIMIT, '| bonus permanent:', bonusPermanent, '| total:', effectiveMax);
+    return effectiveMax;
+  }
+
+// BARU: menyimpan BONUS LIMIT seorang user, dengan format & key yang
+// SAMA PERSIS dengan yang dibaca getBonusLimitData() / dipakai admin.html
+// ('reactionLimit_' + username, { date, count }). Ini SATU-SATUNYA
+// perubahan pada mekanisme bonus limit — fungsi baca (getBonusLimitData,
+// getEffectiveMaxLimit) dan logika anti-bypass TIDAK diubah sama sekali,
+// supaya tetap sesuai batasan "yang tidak boleh diubah".
+function setBonusLimitData(username, count) {
+    const key = 'reactionLimit_' + username;
+    const data = { date: getTodayStr(), count };
+    localStorage.setItem(key, JSON.stringify(data));
+    console.log('[setBonusLimitData] key:', key, 'data:', data);
+}
+
+// Memperbarui angka dan progress bar limit berdasarkan DEVICE ID + USERNAME
+// (username dipakai untuk menghitung ulang bonus limit dari admin),
+// serta menampilkan badge device ID (jika elemennya ada di halaman).
+function refreshLimitUI(deviceId, username) {
+    const data = getLimitData(deviceId);
+    const effectiveMax = getEffectiveMaxLimit(username);
+    document.getElementById('limit-used').textContent = data.count;
+    document.getElementById('limit-max').textContent =
+        effectiveMax === Infinity ? 'Unlimited' : effectiveMax;
+
+    const fill = document.getElementById('limit-progress-fill');
+    const percent = Math.min((data.count / effectiveMax) * 100, 100);
+    fill.style.width = percent + '%';
+    fill.classList.toggle('full', data.count >= effectiveMax);
+
+    // Tampilkan device ID pendek di dashboard (opsional, untuk debugging
+    // & supaya user paham kenapa limitnya "ngikutin HP", bukan akun).
+    renderDeviceIdBadge(deviceId);
+}
+
+// DIHAPUS: tombol "↻ Refresh Limit" tidak ada di HTML, jadi fungsi ini
+// (dan event listener-nya di DOMContentLoaded) dikomentari supaya tidak
+// menyebabkan error "Cannot read properties of null" saat inisialisasi.
+function forceRefreshLimit() {
+    const session = getValidSession();
+    if (!session) return;
+    const deviceId = getDeviceIdFromSession(session);
+    console.log('[forceRefreshLimit] refresh manual untuk username:', session.username, '| deviceId:', deviceId); // ← DEBUG
+    refreshLimitUI(deviceId, session.username);
+    showToast('Limit berhasil di-refresh.', 'info');
+}
+
+let countdownTimerId = null;
+
+// Menghitung waktu tersisa sampai tengah malam lokal.
+function getMsUntilMidnight() {
+    const now = new Date();
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+    return nextMidnight.getTime() - now.getTime();
+}
+
+// Memperbarui countdown reset limit setiap detik.
+function updateCountdownDisplay() {
+    const ms = getMsUntilMidnight();
+    const totalSeconds = Math.max(Math.floor(ms / 1000), 0);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    document.getElementById('limit-countdown').textContent =
+        'Reset in: ' + hours + 'j ' + minutes + 'm ' + seconds + 's';
+
+    // Jika sudah lewat tengah malam, refresh limit ke 0 lagi.
+    // Tetap pakai deviceId untuk pemakaian (ANTI LIMIT BYPASS), username
+    // dikirim juga supaya bonus limit dari admin ikut terhitung ulang.
+    const session = getValidSession();
+    if (session) refreshLimitUI(getDeviceIdFromSession(session), session.username);
+}
+
+// Memulai timer countdown limit.
+function startCountdownTimer() {
+    stopCountdownTimer();
+    updateCountdownDisplay();
+    countdownTimerId = setInterval(updateCountdownDisplay, 1000);
+}
+
+// Menghentikan timer countdown.
+function stopCountdownTimer() {
+    if (countdownTimerId) {
+        clearInterval(countdownTimerId);
+        countdownTimerId = null;
+    }
+}
+
+/* ===================================================
+   SECTION 11.2: BELI LIMIT OTOMATIS
+   ---------------------------------------------------
+   Alur: pilih paket -> POST /api/create-payment -> tampilkan QRIS ->
+   polling /api/check-payment tiap 5 detik -> begitu 'success', panggil
+   /api/add-limit -> tulis hasilnya ke localStorage lewat
+   setBonusLimitData() (format sama persis dengan bonus admin, jadi
+   TIDAK menyentuh logika anti-bypass sama sekali).
+
+   Data transaksi (pending/processed) disimpan di server (Firestore),
+   BUKAN localStorage — /api/*.js jalan sebagai Vercel Serverless
+   Function, yang tidak punya akses ke localStorage browser sama sekali.
+=================================================== */
+
+// Daftar paket HARUS SAMA PERSIS dengan yang divalidasi di
+// /api/create-payment.js (server tetap jadi sumber kebenaran harga).
+const PAKET_LIMIT = [
+    { jumlah: 5,   harga: 2000 },
+    { jumlah: 15,  harga: 5000 },
+    { jumlah: 50,  harga: 10000 },
+    { jumlah: 100, harga: 20000 },
+    { jumlah: 150, harga: 35000 },
+    { jumlah: 200, harga: 40000 },
+];
+
+// State transaksi yang sedang berjalan di halaman Beli Limit.
+let currentPaket = null;      // { jumlah, harga } yang sedang dipilih
+let currentDepositId = null;  // depositId dari Ramashop, dipakai check & add-limit
+let currentExpiredAt = null;  // ISO time kadaluarsa QRIS
+let paymentPollTimer = null;  // interval id untuk polling status
+let paymentPollCount = 0;     // jumlah polling yang sudah jalan (maks 40)
+let bayarCountdownTimer = null; // interval id untuk countdown kadaluarsa
+let currentTotalAmount = null;
+  
+// Format angka jadi "Rp 3.000".
+function formatRupiah(n) {
+    return 'Rp ' + Number(n).toLocaleString('id-ID');
+}
+
+// Menggambar grid paket limit di halaman Beli Limit.
+function renderPaketGrid() {
+    const grid = document.getElementById('paket-grid');
+    grid.innerHTML = '';
+    PAKET_LIMIT.forEach((paket) => {
+        const card = document.createElement('div');
+        card.className = 'paket-card';
+        card.innerHTML =
+            '<div class="paket-jumlah">+' + paket.jumlah + ' LIMIT</div>' +
+            '<div class="paket-harga">' + formatRupiah(paket.harga) + '</div>' +
+            '<span class="paket-beli-label">Beli</span>';
+        card.addEventListener('click', () => pilihPaket(paket.jumlah, paket.harga));
+        grid.appendChild(card);
+    });
+}
+
+// Dipanggil saat user klik salah satu paket. Langsung pakai
+// session.username yang sedang login (sesuai permintaan, tanpa form
+// input username terpisah), lalu request pembayaran ke server.
+// Flag global buat cegah double-click
+let isCreatingPayment = false;
+
+async function pilihPaket(jumlahLimit, harga) {
+    const session = getValidSession();
+    if (!session) { showLoginPage(); return; }
+
+    if (isCreatingPayment) {
+        showToast('Tunggu sebentar, sedang membuat QRIS...', 'info');
+        return;
+    }
+
+    const lastCreate = Number(localStorage.getItem('lastCreatePayment_' + session.username) || 0);
+    const elapsed = Date.now() - lastCreate;
+    if (elapsed < 30000) {
+        const sisa = Math.ceil((30000 - elapsed) / 1000);
+        showToast('Tunggu ' + sisa + ' detik lagi sebelum bikin QRIS baru.', 'error');
+        return;
+    }
+
+    if (!jumlahLimit || jumlahLimit <= 0) {
+        showToast('Jumlah limit tidak valid.', 'error');
+        return;
+    }
+
+    if (!harga || harga <= 0) {
+        showToast('Harga tidak valid.', 'error');
+        return;
+    }
+
+    isCreatingPayment = true;
+    currentPaket = { jumlah: jumlahLimit, harga };
+
+    document.getElementById('paket-grid-wrap').style.display = 'none';
+    document.getElementById('bayar-panel').style.display = 'block';
+    document.getElementById('bayar-paket-label').textContent = '+' + jumlahLimit + ' Limit';
+    document.getElementById('bayar-jumlah-limit').textContent = jumlahLimit;
+    document.getElementById('bayar-total').textContent = formatRupiah(harga);
+    setBayarStatus('pending', 'MEMBUAT QRIS...');
+    document.getElementById('qris-img-wrap').style.display = 'none';
+    document.getElementById('bayar-result-msg').textContent = '';
+    document.getElementById('bayar-lagi-btn').style.display = 'none';
+
+    try {
+        const res = await fetch('/api/create-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: session.username, jumlahLimit }),
+        });
+        const json = await res.json();
+
+        if (res.status === 429) {
+            setBayarStatus('failed', 'RATE LIMITED');
+            document.getElementById('bayar-result-msg').textContent = json.message || 'Terlalu banyak request. Tunggu 1 menit.';
+            document.getElementById('bayar-lagi-btn').style.display = 'block';
+            return;
+        }
+
+        if (!json.success) {
+            setBayarStatus('failed', 'GAGAL BUAT QRIS');
+            document.getElementById('bayar-result-msg').textContent = json.message || 'Gagal membuat pembayaran. Coba lagi.';
+            document.getElementById('bayar-lagi-btn').style.display = 'block';
+            return;
+        }
+
+        if (!json.data || !json.data.depositId || !json.data.qrImage) {
+            setBayarStatus('failed', 'DATA INVALID');
+            document.getElementById('bayar-result-msg').textContent = 'Response tidak valid. Coba lagi.';
+            document.getElementById('bayar-lagi-btn').style.display = 'block';
+            return;
+        }
+
+        localStorage.setItem('lastCreatePayment_' + session.username, String(Date.now()));
+
+        currentDepositId = json.data.depositId;
+        currentExpiredAt = json.data.expiredAt || new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+        const hargaDasar = json.data.amount || currentPaket.harga;
+        const totalBayar = json.data.totalAmount || hargaDasar;
+
+        document.getElementById('bayar-harga-dasar').textContent = formatRupiah(hargaDasar);
+        document.getElementById('bayar-total').textContent = formatRupiah(totalBayar);
+        document.getElementById('qris-img').src = json.data.qrImage;
+        document.getElementById('qris-img-wrap').style.display = 'block';
+        setBayarStatus('pending', 'PENDING');
+
+        currentTotalAmount = totalBayar;
+
+        startCountdown(currentExpiredAt);
+        paymentPollCount = 0;
+        paymentPollTimer = setInterval(checkPaymentStatus, 5000);
+    } catch (e) {
+        console.error('[pilihPaket] error:', e);
+        setBayarStatus('failed', 'ERROR');
+        document.getElementById('bayar-result-msg').textContent = 'Terjadi kesalahan jaringan. Coba lagi.';
+        document.getElementById('bayar-lagi-btn').style.display = 'block';
+    } finally {
+        isCreatingPayment = false;
+    }
+}
+
+// Mengubah badge status pembayaran di panel.
+function setBayarStatus(kind, label) {
+    const el = document.getElementById('bayar-status');
+    el.className = 'bayar-status-badge bayar-status-' + kind;
+    el.textContent = label;
+}
+
+// Polling status pembayaran ke server tiap 5 detik (maks 40x / 200 detik).
+async function checkPaymentStatus() {
+    if (!currentDepositId) { stopPaymentPolling(); return; }
+
+    paymentPollCount++;
+    if (paymentPollCount > 120) {
+        stopPaymentPolling();
+        stopBayarCountdown();
+        setBayarStatus('expired', 'TIMEOUT');
+        document.getElementById('bayar-result-msg').textContent = 'Waktu tunggu habis. Silakan cek status atau bayar lagi.';
+        document.getElementById('bayar-lagi-btn').style.display = 'block';
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/check-payment?depositId=' + encodeURIComponent(currentDepositId));
+        const json = await res.json();
+        if (!json.success) return;
+
+        if (json.status === 'paid') {
+            stopPaymentPolling();
+            stopBayarCountdown();
+            setBayarStatus('success', 'PAID');
+            await addLimitToUser();
+        } else if (json.status === 'expired') {
+            stopPaymentPolling();
+            stopBayarCountdown();
+            setBayarStatus('expired', 'EXPIRED');
+            document.getElementById('bayar-result-msg').textContent = 'QRIS kadaluarsa.';
+            document.getElementById('bayar-lagi-btn').style.display = 'block';
+        }
+        // status 'pending' -> lanjut polling.
+    } catch (e) {
+        console.error('[checkPaymentStatus] error:', e);
+    }
+}
+
+// Menghentikan polling.
+function stopPaymentPolling() {
+    if (paymentPollTimer) {
+        clearInterval(paymentPollTimer);
+        paymentPollTimer = null;
+    }
+}
+
+// Dipanggil setelah status pembayaran 'success': minta server menambah
+// limit (idempoten lewat Firestore), lalu tulis hasilnya ke
+// localStorage 'reactionLimit_' + username supaya dashboard yang sudah
+// ada (getEffectiveMaxLimit, dsb — TIDAK diubah) langsung ikut membaca
+// limit yang baru.
+async function addLimitToUser() {
+    const session = getValidSession();
+    if (!session || !currentPaket || !currentDepositId) return;
+
+    // ✅ GUARD #1: cek flag di localStorage
+    const processedKey = 'processedDeposit_' + currentDepositId;
+    if (localStorage.getItem(processedKey) === 'true') {
+        console.log('[addLimitToUser] Deposit sudah diproses, skip.');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/add-limit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                username: session.username,
+                jumlahLimit: currentPaket.jumlah,
+                depositId: currentDepositId,
+                totalAmount: currentTotalAmount,
+            }),
+        });
+        const json = await res.json();
+
+        if (!json.success) {
+            document.getElementById('bayar-result-msg').textContent = json.message || 'Gagal menambah limit.';
+            document.getElementById('bayar-lagi-btn').style.display = 'block';
+            return;
+        }
+
+        // ✅ GUARD #2: set flag di localStorage SEBELUM kredit
+        localStorage.setItem(processedKey, 'true');
+
+        // ✅ KREDIT LIMIT — cuma 1x karena udah di-guard di atas
+        addBonusPermanent(session.username, json.jumlahLimit);
+
+        // ✅ Update UI
+        document.getElementById('bayar-result-msg').textContent = 'Limit berhasil ditambahkan!';
+        document.getElementById('bayar-lagi-btn').style.display = 'block';
+        showToast('+' + json.jumlahLimit + ' limit berhasil ditambahkan!', 'success');
+
+        const deviceId = getDeviceIdFromSession(session);
+        const data = getLimitData(deviceId);
+        const effectiveMax = getEffectiveMaxLimit(session.username);
+        document.getElementById('beli-limit-used').textContent = data.count;
+        document.getElementById('beli-limit-max').textContent = effectiveMax === Infinity ? '∞' : effectiveMax;
+
+        // ✅ STOP polling — biar gak panggil /api/add-limit lagi
+        stopPaymentPolling();
+        stopBayarCountdown();
+    } catch (e) {
+        console.error('[addLimitToUser] error:', e);
+        document.getElementById('bayar-result-msg').textContent = 'Terjadi kesalahan saat menambah limit.';
+        document.getElementById('bayar-lagi-btn').style.display = 'block';
+    }
+}
+
+// ===================================================
+// AUTO-RECOVERY PENDING TRANSACTION
+// ---------------------------------------------------
+// Dipanggil saat dashboard/beli limit dibuka.
+// Kalau user bayar tapi halaman ke-refresh/close tab
+// sebelum polling selesai, fungsi ini bakal:
+// 1. Cek Firestore: ada transaksi pending gak?
+// 2. Kalau ada, cek status ke Ramashop
+// 3. Kalau sukses, kredit limit otomatis
+//
+// Throttle: cuma jalan 1x per 30 detik (cegah spam refresh)
+// ===================================================
+async function recoverPendingTransactions() {
+    const session = getValidSession();
+    if (!session) return;
+
+    // Throttle: skip kalau baru jalan < 30 detik
+    const throttleKey = 'lastRecovery_' + session.username;
+    const lastRun = Number(localStorage.getItem(throttleKey) || 0);
+    if (Date.now() - lastRun < 30000) {
+        console.log('[recoverPendingTransactions] skip (throttle 30 detik)');
+        return;
+    }
+    localStorage.setItem(throttleKey, String(Date.now()));
+
+    console.log('[recoverPendingTransactions] cek transaksi pending untuk:', session.username);
+
+    try {
+        const res = await fetch('/api/pending-transactions?username=' + encodeURIComponent(session.username));
+        const json = await res.json();
+
+        if (!json.success || !json.transactions || json.transactions.length === 0) {
+            console.log('[recoverPendingTransactions] tidak ada transaksi pending.');
+            return;
+        }
+
+        console.log('[recoverPendingTransactions] ketemu', json.transactions.length, 'transaksi pending');
+
+        // Loop tiap transaksi, cek status ke Ramashop
+        for (const tx of json.transactions) {
+            try {
+                const checkRes = await fetch('/api/check-payment?depositId=' + encodeURIComponent(tx.depositId));
+                const checkJson = await checkRes.json();
+
+                console.log('[recoverPendingTransactions]', tx.depositId, '-> status:', checkJson.status);
+
+                if (checkJson.status === 'success' || checkJson.status === 'already') {
+                    // Kredit limit!
+                    const creditRes = await fetch('/api/add-limit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: session.username,
+                            jumlahLimit: tx.jumlahLimit,
+                            depositId: tx.depositId,
+                        }),
+                    });
+                    const creditJson = await creditRes.json();
+
+                    if (creditJson.success) {
+                        addBonusPermanent(session.username, creditJson.jumlahLimit);
+                        showToast('Pembayaran sebelumnya berhasil! +' + creditJson.jumlahLimit + ' limit ditambahkan.', 'success');
+                        console.log('[recoverPendingTransactions] ✅ kredit', creditJson.jumlahLimit, 'limit dari', tx.depositId);
+                    } else {
+                        console.warn('[recoverPendingTransactions] gagal kredit:', creditJson.message);
+                    }
+                }
+            } catch (e) {
+                console.error('[recoverPendingTransactions] error cek', tx.depositId, ':', e);
+            }
+        }
+
+        // Refresh UI biar angka limit terbaru muncul
+        const deviceId = getDeviceIdFromSession(session);
+        refreshLimitUI(deviceId, session.username);
+    } catch (e) {
+        console.error('[recoverPendingTransactions] error:', e);
+    }
+}
+  
+// Countdown mundur sampai QRIS kadaluarsa (format "4:59").
+function startCountdown(expiredAtIso) {
+    stopBayarCountdown();
+    const expiredAt = new Date(expiredAtIso).getTime();
+
+    function tick() {
+        const remainingMs = expiredAt - Date.now();
+        if (remainingMs <= 0) {
+            document.getElementById('bayar-countdown').textContent = 'Kadaluarsa dalam: 0:00';
+            stopBayarCountdown();
+            stopPaymentPolling();
+            setBayarStatus('expired', 'EXPIRED');
+            document.getElementById('bayar-result-msg').textContent = 'QRIS kadaluarsa.';
+            document.getElementById('bayar-lagi-btn').style.display = 'block';
+            return;
+        }
+        const totalSec = Math.floor(remainingMs / 1000);
+        const minutes = Math.floor(totalSec / 60);
+        const seconds = totalSec % 60;
+        document.getElementById('bayar-countdown').textContent =
+            'Kadaluarsa dalam: ' + minutes + ':' + String(seconds).padStart(2, '0');
+    }
+
+    tick();
+    bayarCountdownTimer = setInterval(tick, 1000);
+}
+
+// Menghentikan countdown kadaluarsa QRIS.
+function stopBayarCountdown() {
+    if (bayarCountdownTimer) {
+        clearInterval(bayarCountdownTimer);
+        bayarCountdownTimer = null;
+    }
+}
+
+// Reset panel pembayaran kembali ke tampilan grid paket (tombol "Bayar Lagi").
+function resetPayment() {
+    stopPaymentPolling();
+    stopBayarCountdown();
+    currentPaket = null;
+    currentDepositId = null;
+    currentExpiredAt = null;
+    currentTotalAmount = null;
+    document.getElementById('bayar-panel').style.display = 'none';
+    document.getElementById('paket-grid-wrap').style.display = 'block';
+    document.getElementById('qris-img-wrap').style.display = 'none';
+    document.getElementById('bayar-result-msg').textContent = '';
+
+    const manualBtn = document.getElementById('manual-check-btn');
+    if (manualBtn) {
+        manualBtn.disabled = false;
+        manualBtn.innerHTML = '<i class="fa-solid fa-rotate"></i> Cek Status Pembayaran';
+    }
+}
+  
+/* ===================================================
+   SECTION 12: INPUT EMOJI (manual, dipisah koma)
+=================================================== */
+// Memecah input emoji berdasarkan koma dan membuang item kosong.
+function parseEmojiInput(raw) {
+    return raw.split(',').map((e) => e.trim()).filter((e) => e.length > 0);
+}
+
+// Memvalidasi dan menampilkan preview emoji realtime.
+function handleEmojiInput() {
+    const raw = document.getElementById('emoji-input').value;
+    const emojis = parseEmojiInput(raw);
+    const preview = document.getElementById('emoji-preview');
+    const countText = document.getElementById('emoji-count-text');
+    const errorEl = document.getElementById('emoji-error');
+
+    preview.innerHTML = emojis.map((e) => '<span class="emoji-chip">' + escapeHtml(e) + '</span>').join('');
+    countText.textContent = emojis.length + ' emoji terdeteksi (minimal ' + MIN_EMOJI + ', maksimal ' + MAX_EMOJI + ')';
+
+    const isTooFew = raw.length > 0 && emojis.length < MIN_EMOJI;
+    const isTooMany = emojis.length > MAX_EMOJI;
+
+    if (isTooMany) {
+        errorEl.textContent = 'Maksimal ' + MAX_EMOJI + ' emoji!';
+        errorEl.classList.add('show');
+    } else if (isTooFew) {
+        errorEl.textContent = 'Minimal ' + MIN_EMOJI + ' emoji!';
+        errorEl.classList.add('show');
+    } else {
+        errorEl.classList.remove('show');
+    }
+}
+
+/* ===================================================
+   SECTION 13: INPUT CHANNEL URL (validasi realtime + riwayat)
+=================================================== */
+// Memvalidasi URL channel WhatsApp secara realtime.
+function handleChannelUrlInput() {
+    const input = document.getElementById('channel-url-input');
+    const icon = document.getElementById('url-status-icon');
+    const errorEl = document.getElementById('url-error');
+    const value = input.value.trim();
+
+    if (!value) {
+        icon.className = 'fa-solid fa-circle-check input-status-icon';
+        errorEl.classList.remove('show');
+        return;
+    }
+
+    const isValid = CHANNEL_URL_REGEX.test(value);
+    icon.className = 'fa-solid fa-circle-check input-status-icon ' + (isValid ? 'valid' : 'invalid');
+    errorEl.classList.toggle('show', !isValid);
+}
+
+// Mengambil history URL channel user.
+function getUrlHistory(username) {
+    try {
+        return JSON.parse(localStorage.getItem('reactionUrlHistory_' + username)) || [];
+    } catch (e) {
+        return [];
+    }
+}
+
+// Menyimpan URL channel terbaru ke history.
+function saveUrlToHistory(username, url) {
+    let list = getUrlHistory(username).filter((u) => u !== url);
+    list.unshift(url);
+    list = list.slice(0, 10);
+    localStorage.setItem('reactionUrlHistory_' + username, JSON.stringify(list));
+    refreshUrlHistory(username);
+}
+
+// Mengisi datalist URL channel dari history.
+function refreshUrlHistory(username) {
+    const list = getUrlHistory(username);
+    const datalist = document.getElementById('url-history-list');
+    datalist.innerHTML = list.map((u) => '<option value="' + escapeHtml(u) + '"></option>').join('');
+}
+
+/* ===================================================
+   SECTION 14: RIWAYAT 5 REACTION TERAKHIR
+=================================================== */
+// Mengambil lima history reaction terakhir user.
+function getHistory(username) {
+    try {
+        return JSON.parse(localStorage.getItem('reactionHistory_' + username)) || [];
+    } catch (e) {
+        return [];
+    }
+}
+
+// Menambahkan entry reaction ke history dan membatasi lima item.
+function addHistoryEntry(username, entry) {
+    let list = getHistory(username);
+    list.unshift(entry);
+    list = list.slice(0, 5);
+    localStorage.setItem('reactionHistory_' + username, JSON.stringify(list));
+}
+
+// Merender lima reaction terakhir ke dashboard.
+function renderHistory(username) {
+    const list = getHistory(username);
+    const container = document.getElementById('history-list');
+
+    if (list.length === 0) {
+        container.innerHTML = '<p class="empty-text">Belum ada riwayat reaction.</p>';
+        return;
+    }
+
+    container.innerHTML = list.map((item) => (
+        '<div class="history-item">' +
+            '<div class="history-emoji">' + escapeHtml(item.emojis) + '</div>' +
+            '<div class="history-url" title="' + escapeHtml(item.url) + '">' + escapeHtml(truncateText(item.url, 40)) + '</div>' +
+            '<div class="history-time">' + formatDateTime(item.time) + '</div>' +
+            '<div class="history-status ' + (item.status === 'success' ? 'ok' : 'fail') + '">' + escapeHtml(item.status) + '</div>' +
+        '</div>'
+    )).join('');
+}
+
+/* ===================================================
+   SECTION 15: KIRIM REACTION (panggil API)
+=================================================== */
+// Memvalidasi input, memanggil API reaction, memperbarui limit dan history.
+async function handleSendReaction() {
+    const session = getValidSession();
+    if (!session) { showLoginPage(); return; }
+
+    // ===================================================
+    // VALIDASI GOOGLE reCAPTCHA v2
+    // Wajib dicek PALING AWAL sebelum validasi lain (emoji,
+    // format URL, limit, dsb). Kalau user belum centang
+    // "Saya bukan robot", request reaction langsung ditolak
+    // di sisi frontend, tidak sampai memanggil API sama sekali.
+    // Dibungkus try/catch: kalau script reCAPTCHA gagal/belum
+    // termuat (mis. jaringan lambat), user diberi tahu daripada
+    // halaman error diam-diam.
+    // ===================================================
+    let captchaResponse = '';
+    try {
+        captchaResponse = grecaptcha.getResponse();
+    } catch (e) {
+        console.error('[handleSendReaction] grecaptcha belum siap:', e);
+        showToast('Captcha belum siap, coba muat ulang halaman.', 'error');
+        return;
+    }
+    if (!captchaResponse && !(typeof window.isReactionAdmin === 'function' && window.isReactionAdmin())) {
+        showToast('Harap selesaikan captcha "Saya bukan robot"!', 'error');
+        return;
+    }
+
+    const emojiRaw = document.getElementById('emoji-input').value;
+    const emojis = parseEmojiInput(emojiRaw);
+    const url = document.getElementById('channel-url-input').value.trim();
+
+    // ANTI LIMIT BYPASS: ambil deviceId dari session (fallback ke getDeviceId()
+    // kalau session lama belum punya field ini), lalu cek PEMAKAIAN limit
+    // berdasarkan deviceId tersebut — BUKAN berdasarkan username yang sedang
+    // login. Batas maksimalnya (effectiveMax) tetap dihitung dari username,
+    // supaya bonus limit yang diberikan admin ke akun ini ikut berlaku.
+    const deviceId = getDeviceIdFromSession(session);
+    const limitData = getLimitData(deviceId);
+    const effectiveMax = getEffectiveMaxLimit(session.username);
+    console.log('[handleSendReaction] cek limit untuk deviceId:', deviceId, '-> count:', limitData.count, '/', effectiveMax);
+
+    // Validasi minimal & maksimal emoji
+if (emojis.length < MIN_EMOJI) {
+    document.getElementById('emoji-error').textContent = 'Minimal ' + MIN_EMOJI + ' emoji!';
+    document.getElementById('emoji-error').classList.add('show');
+    showToast('Minimal ' + MIN_EMOJI + ' emoji (pisahkan dengan koma).', 'error');
+    return;
+}
+
+if (emojis.length > MAX_EMOJI) {
+    document.getElementById('emoji-error').textContent = 'Maksimal ' + MAX_EMOJI + ' emoji!';
+    document.getElementById('emoji-error').classList.add('show');
+    showToast('Maksimal ' + MAX_EMOJI + ' emoji (pisahkan dengan koma).', 'error');
+    return;
+}
+
+    // Validasi format link channel
+    if (!CHANNEL_URL_REGEX.test(url)) {
+        document.getElementById('url-error').classList.add('show');
+        showToast('Format link channel tidak valid.', 'error');
+        return;
+    }
+
+    // Validasi limit harian (sudah termasuk bonus limit dari admin)
+    if (limitData.count >= effectiveMax) {
+        showToast('Token sudah habis. Kuota Free User akan tersedia lagi setelah 7 jam.', 'error');
+        return;
+    }
+
+    setSendingState(true);
+
+    try {
+        const reactionParam = emojis.join(',');
+
+        // Bangun URL request ke BACKEND PROXY (/api/rch), bukan ke API asli.
+        // Parameter 'key' tetap dikirim dari frontend agar backend proxy bisa
+        // meneruskannya ke API asli (https://api.nexadev.my.id/api/rch).
+        const apiUrl = API_BASE_URL +
+            '?url=' + encodeURIComponent(url) +
+            '&reaction=' + encodeURIComponent(reactionParam);
+
+        console.log('[handleSendReaction] mengirim request ke backend proxy:', apiUrl);
+        const response = await fetch(apiUrl);
+        console.log('[handleSendReaction] response status dari proxy:', response.status);
+        const rawText = await response.text();
+        console.log('[handleSendReaction] response text:', rawText);
+
+        let data;
+        try { data = JSON.parse(rawText); } catch (e) { data = { message: rawText }; }
+
+        const messageText = String(data.message || data.status || data.response || rawText || '-');
+        const isQueued = messageText.includes('Reaction VIP API masuk antrean');
+
+        const requestSucceeded = response.ok;
+        // ANTI LIMIT BYPASS: limit yang ditambah/dibaca adalah limit DEVICE,
+        // jadi walau reaction ini dikirim dari akun manapun, kuota yang
+        // berkurang adalah kuota milik device yang sama. Batas maksimalnya
+        // tetap dihitung dari username (termasuk bonus limit dari admin).
+        const newLimitData = requestSucceeded
+            ? incrementLimit(deviceId, session.username)
+            : getLimitData(deviceId);
+        refreshLimitUI(deviceId, session.username);
+
+        // CATATAN: sisa limit TIDAK dihitung di sini lagi — renderResultPanel()
+        // sekarang menghitung sendiri sisa limit dari data user (localStorage),
+        // bukan dari data.limit_remaining (limit global API). Lihat komentar
+        // lengkap di dalam fungsi renderResultPanel().
+        renderResultPanel({
+            target_channel: url,
+            status: data.status || (response.ok ? 'success' : 'failed'),
+            response_time: data.response_time || data.responseTime || '-'
+        });
+
+        saveUrlToHistory(session.username, url);
+        addHistoryEntry(session.username, {
+            emojis: reactionParam,
+            url,
+            time: Date.now(),
+            status: response.ok ? 'success' : 'failed'
+        });
+        renderHistory(session.username);
+
+        if (isQueued) {
+            showToast('Reaction Masuk Antrian!', 'success');
+        } else if (response.ok) {
+            showToast('' + messageText, 'success');
+        } else {
+            showToast('' + messageText, 'info');
+        }
+
+    } catch (error) {
+        console.error('[handleSendReaction] fetch error DETAIL:', error);
+        showToast('Gagal mengirim reaction. Error: ' + error.message, 'error');
+    } finally {
+        setSendingState(false);
+        // Reset widget reCAPTCHA setelah request selesai (baik sukses
+        // maupun gagal), supaya user wajib mencentang ulang captcha
+        // untuk setiap kali kirim reaction baru — mencegah 1 checklist
+        // captcha dipakai berkali-kali secara otomatis oleh script.
+        grecaptcha.reset();
+    }
+}
+
+// Mengubah keadaan tombol saat request API berlangsung.
+function setSendingState(isSending) {
+    const btn = document.getElementById('send-reaction-btn');
+    const btnText = document.getElementById('send-btn-text');
+    btn.disabled = isSending;
+    btnText.textContent = isSending ? 'Mengirim...' : 'Kirim Reaction';
+}
+
+// Menampilkan hasil response API pada panel hasil.
+//
+// PERBAIKAN PENTING (FIX SISA LIMIT):
+// Sebelumnya, "Limit Remaining" diambil langsung dari result.limit_remaining
+// yang berasal dari field `limit_remaining` response API eksternal
+// (https://api.nexadev.my.id/api/rch). Field itu adalah limit GLOBAL milik
+// API (bisa ribuan), BUKAN limit harian milik user di website ini — jadi
+// angkanya membingungkan user (tidak nyambung dengan limit paket/harian
+// mereka sendiri).
+//
+// SEKARANG: "Sisa Limit" dihitung ULANG di sisi frontend, murni dari data
+// user yang tersimpan di localStorage (device + akun), sama persis dengan
+// perhitungan yang dipakai di handleSendReaction() / refreshLimitUI():
+//   sisaLimit = effectiveMax (limit harian + bonus admin) - limitData.count (pemakaian device saat ini)
+// result.limit_remaining dari API TIDAK DIPAKAI SAMA SEKALI di sini.
+//
+// Bagian "Pesan" (keterangan mentah dari API) juga sudah dihapus dari UI —
+// lihat perubahan pada result-panel di HTML (row #result-message dibuang).
+function renderResultPanel(result) {
+    document.getElementById('result-panel').classList.add('show');
+    document.getElementById('result-target').textContent = result.target_channel || '-';
+    document.getElementById('result-status').textContent = result.status;
+    document.getElementById('result-time').textContent = result.response_time;
+
+    // --- HITUNG SISA LIMIT DARI DATA USER (BUKAN DARI API) ---
+    const session = getValidSession();
+    if (session) {
+        const deviceId = getDeviceIdFromSession(session);
+        const limitData = getLimitData(deviceId);
+        const effectiveMax = getEffectiveMaxLimit(session.username);
+        const sisaLimit = effectiveMax === Infinity
+            ? 'Unlimited'
+            : Math.max(effectiveMax - limitData.count, 0);
+        document.getElementById('result-remaining').textContent =
+            sisaLimit + ' (dari ' + effectiveMax + ')';
+    } else {
+        document.getElementById('result-remaining').textContent = '-';
+    }
+    // --- END HITUNG SISA LIMIT ---
+}
+
+/* ===================================================
+   SECTION 16C: BROADCAST MESSAGE (BARU)
+   ---------------------------------------------------
+   Admin mengirim pesan broadcast lewat admin.html, disimpan di
+   localStorage key 'broadcastMessage': { message, time, sender }.
+   Fungsi ini dipanggil setiap kali dashboard user ditampilkan,
+   untuk mengecek apakah ada pesan broadcast BARU (dibandingkan
+   dengan 'lastBroadcastShown' yang tersimpan per browser) supaya
+   toast broadcast tidak muncul berulang kali di setiap refresh.
+=================================================== */
+function checkBroadcastMessage() {
+    // Broadcast/alert eksternal dinonaktifkan pada UI baru.
+    return;
+    let broadcast;
+    try {
+        broadcast = JSON.parse(localStorage.getItem('broadcastMessage'));
+    } catch (e) {
+        console.error('[checkBroadcastMessage] gagal parse broadcastMessage:', e); // ← DEBUG
+        return;
+    }
+
+    if (!broadcast || !broadcast.message) {
+        console.log('[checkBroadcastMessage] tidak ada broadcast tersimpan.'); // ← DEBUG
+        return;
+    }
+
+    const lastShown = localStorage.getItem('lastBroadcastShown');
+    // Bandingkan waktu broadcast dengan waktu broadcast terakhir yang
+    // sudah ditampilkan. Kalau sama/lebih lama, berarti sudah pernah
+    // dilihat -> jangan tampilkan lagi.
+    if (lastShown && Number(lastShown) >= broadcast.time) {
+        console.log('[checkBroadcastMessage] broadcast ini sudah pernah ditampilkan.'); // ← DEBUG
+        return;
+    }
+
+    showToast('' + broadcast.message, 'info');
+    localStorage.setItem('lastBroadcastShown', String(broadcast.time));
+    console.log('[checkBroadcastMessage] broadcast baru ditampilkan:', broadcast); // ← DEBUG
+}
+
+/* ===================================================
+   SECTION 16D: SIDEBAR (HAMBURGER MENU)
+   ---------------------------------------------------
+   Sidebar tampil di SEMUA halaman (login, register, dashboard)
+   karena markup-nya diletakkan langsung di bawah <body>, di
+   luar elemen .page. Overlay + panel dikontrol lewat class
+   'show' (animasi slide diatur penuh oleh CSS transition).
+=================================================== */
+// Membuka sidebar: tampilkan overlay + slide-in panel dari kiri.
+function openSidebar() {
+    console.log('[openSidebar] membuka sidebar');
+    document.getElementById('sidebar-overlay').classList.add('show');
+    document.getElementById('sidebar-panel').classList.add('show');
+}
+
+// Menutup sidebar: sembunyikan overlay + slide-out panel ke kiri.
+function closeSidebar() {
+    console.log('[closeSidebar] menutup sidebar');
+    document.getElementById('sidebar-overlay').classList.remove('show');
+    document.getElementById('sidebar-panel').classList.remove('show');
+}
+
+/* ===================================================
+   SECTION 18: EVENT LISTENERS & INISIALISASI
+=================================================== */
+// Menginisialisasi event listener dan memulihkan session saat halaman selesai dimuat.
+document.addEventListener('DOMContentLoaded', () => {
+    // Inisialisasi seluruh aplikasi setelah DOM siap.
+    console.log('[init] DOMContentLoaded');
+
+    // BARU: buka sidebar lewat tombol ☰.
+    document.getElementById('sidebar-open-btn').addEventListener('click', openSidebar);
+
+    // BARU: tutup sidebar lewat tombol ✕.
+    document.getElementById('sidebar-close-btn').addEventListener('click', closeSidebar);
+
+    // BARU: klik overlay di luar panel sidebar juga menutup sidebar.
+    document.getElementById('sidebar-overlay').addEventListener('click', closeSidebar);
+
+    // BARU: tombol "Login dengan Google".
+    document.getElementById('google-login-btn').addEventListener('click', handleGoogleLogin);
+
+    // Toggle password login.
+    bindPasswordToggle('login-toggle-pw', 'login-password');
+
+    // Toggle password register.
+    bindPasswordToggle('register-password-toggle-pw', 'register-password');
+
+    // Toggle confirm password register.
+    bindPasswordToggle('register-confirm-toggle-pw', 'register-confirm');
+
+    // Pindah dari login ke register.
+    document.getElementById('show-register-link').addEventListener('click', (e) => {
+        // Mencegah navigasi default dan membuka form register.
+        e.preventDefault();
+        switchAuthForm('register');
+    });
+
+    // Pindah dari register ke login.
+    document.getElementById('show-login-link').addEventListener('click', (e) => {
+        // Mencegah navigasi default dan membuka form login.
+        e.preventDefault();
+        switchAuthForm('login');
+    });
+
+    // Submit login.
+    document.getElementById('login-form').addEventListener('submit', handleLogin);
+
+    // Submit register.
+    document.getElementById('register-form').addEventListener('submit', handleRegister);
+
+    // Update indikator kekuatan password secara realtime.
+    document.getElementById('register-password').addEventListener('input', (e) => {
+        // Memperbarui progress bar dan checklist password.
+        updatePasswordStrengthUI(e.target.value);
+    });
+
+    // Validasi konfirmasi password secara realtime.
+    document.getElementById('register-confirm').addEventListener('input', () => {
+        // Menampilkan error hanya jika field konfirmasi sudah diisi dan tidak sama.
+        const password = document.getElementById('register-password').value;
+        const confirm = document.getElementById('register-confirm').value;
+        const error = document.getElementById('reg-confirm-error');
+        if (confirm && password !== confirm) {
+            error.textContent = 'Konfirmasi password tidak cocok.';
+            error.classList.add('show');
+        } else {
+            error.classList.remove('show');
+        }
+    });
+
+    // Logout.
+    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+    // DIHAPUS: elemen 'refresh-limit-btn' tidak ada di HTML, sehingga
+    // getElementById mengembalikan null dan .addEventListener melempar
+    // error "Cannot read properties of null" — error ini menghentikan
+    // seluruh script di dalam DOMContentLoaded, termasuk listener emoji
+    // input & tombol kirim reaction yang didaftarkan setelah baris ini.
+    // document.getElementById('refresh-limit-btn').addEventListener('click', forceRefreshLimit);
+
+    // HAPUS: fitur "Redeem Code" masih tidak diaktifkan kembali. Fitur
+    // "Beli Limit" DIAKTIFKAN ULANG (lihat listener di bawah) sesuai
+    // permintaan terbaru, dengan implementasi baru (Ramashop QRIS).
+
+    // BARU: tombol "Beli Limit" di dashboard -> pindah ke halaman Beli Limit.
+    document.getElementById('beli-limit-btn').addEventListener('click', showBeliLimitPage);
+
+    document.getElementById('manual-check-btn').addEventListener('click', async () => {
+    if (!currentDepositId) {
+        showToast('Belum ada transaksi aktif.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('manual-check-btn');
+
+    // Kalau udah diproses, jangan lanjut
+    if (localStorage.getItem('processedDeposit_' + currentDepositId) === 'true') {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Sudah Ditambahkan';
+        showToast('Limit sudah ditambahkan.', 'info');
+        return;
+    }
+
+    if (btn.disabled) return;
+
+    showToast('Mengecek status pembayaran...', 'info');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengecek...';
+
+    try {
+        await checkPaymentStatus();
+    } finally {
+        // Kalau limit udah ditambah, disable permanen
+        if (localStorage.getItem('processedDeposit_' + currentDepositId) === 'true') {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Sudah Ditambahkan';
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Cek Status Pembayaran';
+        }
+    }
+});
+
+    // BARU: tombol "Kembali ke Dashboard" di halaman Beli Limit.
+    document.getElementById('beli-back-btn').addEventListener('click', backToDashboard);
+
+    // BARU: tombol "Bayar Lagi" di panel pembayaran -> reset ke grid paket.
+    document.getElementById('bayar-lagi-btn').addEventListener('click', resetPayment);
+
+    // Input emoji realtime.
+    document.getElementById('emoji-input').addEventListener('input', handleEmojiInput);
+
+    // Input URL channel realtime.
+    document.getElementById('channel-url-input').addEventListener('input', handleChannelUrlInput);
+
+    // Kirim reaction.
+    document.getElementById('send-reaction-btn').addEventListener('click', handleSendReaction);
+
+    // Mode tanpa login: session tamu otomatis supaya logic API/limit/history lama tetap berjalan.
+    let session = getValidSession();
+    if (!session) {
+        createSession('guest', true);
+        session = getValidSession();
+    }
+    showDashboardPage();
+});
+
+  /* ===================================================
+   POPUP WELCOME — LOGIC (HANYA MUNCUL DI HALAMAN LOGIN)
+=================================================== */
+const welcomePopup = document.getElementById('welcome-popup');
+const noShowCheckbox = document.getElementById('no-show-again');
+
+// Cek apakah user pernah centang "jangan tampilkan lagi"
+const hidePopup = localStorage.getItem('mitzy_popup_hidden');
+
+// Fungsi buat nampilin popup — TAPI cuma kalau halaman login aktif
+function maybeShowWelcomePopup() {
+  // Kalau user udah centang "jangan tampilkan lagi", skip total
+  if (hidePopup === '1') return;
+
+  // Cek halaman login aktif atau nggak
+  const loginPage = document.getElementById('page-login');
+  const isLoginActive = loginPage && loginPage.classList.contains('active');
+
+  // Kalau bukan di halaman login, jangan tampilkan
+  if (!isLoginActive) return;
+
+  // Kalau popup udah kebuka, jangan dobel
+  if (welcomePopup && welcomePopup.classList.contains('show')) return;
+
+  setTimeout(() => {
+    if (welcomePopup) welcomePopup.classList.add('show');
+  }, 800);
+}
+
+// Tutup popup
+function closeWelcomePopup() {
+  if (welcomePopup) welcomePopup.classList.remove('show');
+}
+
+// Toggle "jangan tampilkan lagi"
+function toggleNoShow(el) {
+  if (el.checked) {
+    localStorage.setItem('mitzy_popup_hidden', '1');
+  } else {
+    localStorage.removeItem('mitzy_popup_hidden');
+  }
+}
+
+// Klik overlay (luar box) buat nutup
+if (welcomePopup) {
+  welcomePopup.addEventListener('click', (e) => {
+    if (e.target === welcomePopup) closeWelcomePopup();
+  });
+}
+
+// ESC buat nutup
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && welcomePopup && welcomePopup.classList.contains('show')) {
+    closeWelcomePopup();
+  }
+});
+
+// ===================================================
+// TRIGGER: cek saat halaman pertama kali load
+// ===================================================
+document.addEventListener('DOMContentLoaded', () => {
+  maybeShowWelcomePopup();
+});
+
+  // ===== THEME TOGGLE =====
+  (function initTheme() {
+    const root = document.documentElement;
+    const btn = document.getElementById('theme-toggle');
+    const saved = localStorage.getItem('reactionTheme');
+
+    if (saved === 'dark') root.classList.add('dark-mode');
+
+    function updateThemeIcon() {
+      if (!btn) return;
+      btn.innerHTML = root.classList.contains('dark-mode')
+        ? '<i class="fa-solid fa-sun"></i>'
+        : '<i class="fa-solid fa-moon"></i>';
+    }
+
+    updateThemeIcon();
+
+    if (btn) {
+      btn.addEventListener('click', function () {
+        root.classList.toggle('dark-mode');
+        localStorage.setItem(
+          'reactionTheme',
+          root.classList.contains('dark-mode') ? 'dark' : 'light'
+        );
+        updateThemeIcon();
+      });
+    }
+  })();
+
+  // Pastikan mode tanpa login tetap membuka dashboard.
+  window.addEventListener('load', function () {
+    const loginPage = document.getElementById('page-login');
+    const dashboardPage = document.getElementById('page-dashboard');
+
+    if (loginPage) loginPage.classList.remove('active');
+    if (dashboardPage) dashboardPage.classList.add('active');
+
+    if (!getValidSession()) {
+      createSession('guest', true);
+    }
+
+    try {
+      showDashboardPage();
+    } catch (e) {
+      console.warn('Dashboard guest init:', e);
+    }
+  });
+
+</script>
+
+<div id="adminModal" class="admin-modal">
+  <div class="admin-box" style="position:relative">
+    <button class="admin-close" id="adminClose" type="button">×</button>
+    <h3>Admin Menu</h3>
+    <p>Masukkan sandi admin untuk membuka pengaturan.</p>
+    <input id="adminPassword" class="admin-input" type="password" placeholder="Sandi admin" autocomplete="off">
+    <button id="adminLogin" class="admin-btn" type="button">Masuk Admin</button>
+    <div id="adminPanel" style="display:none">
+      <div class="admin-status">Mode admin aktif. Limit lokal ditampilkan sebagai <b>UNLIMITED</b>. Batas yang diberlakukan server/API tetap tidak dapat dihapus dari browser.</div>
+      <button id="adminUnlimited" class="admin-btn" type="button">Aktifkan Unlimited di UI</button>
+      <button id="adminLogout" class="admin-btn secondary" type="button">Keluar Admin</button>
+    </div>
+    <div id="adminMsg" style="margin-top:10px;color:var(--p);font-size:13px"></div>
+  </div>
+</div>
+
+<script id="admin-ui-js">
+(function(){
+  const PASSWORD="nathandeveloper";
+  const modal=document.getElementById("adminModal");
+  const open=document.getElementById("adminBtn");
+  const close=document.getElementById("adminClose");
+  const login=document.getElementById("adminLogin");
+  const pass=document.getElementById("adminPassword");
+  const panel=document.getElementById("adminPanel");
+  const msg=document.getElementById("adminMsg");
+  const theme=document.getElementById("themeBtn");
+
+  function showAdmin(){
+    if(modal) modal.style.display="flex";
+    if(pass) pass.focus();
+  }
+  function hideAdmin(){
+    if(modal) modal.style.display="none";
+    if(msg) msg.textContent="";
+  }
+  if(open) open.addEventListener("click",showAdmin);
+  if(close) close.addEventListener("click",hideAdmin);
+  if(modal) modal.addEventListener("click",e=>{if(e.target===modal)hideAdmin();});
+
+  if(login) login.addEventListener("click",function(){
+    if(pass.value===PASSWORD){
+      panel.style.display="block";
+      login.style.display="none";
+      pass.style.display="none";
+      msg.textContent="Login admin berhasil.";
+    }else{
+      msg.textContent="Sandi admin salah.";
+      pass.select();
+    }
+  });
+
+  const unlimited=document.getElementById("adminUnlimited");
+  if(unlimited) unlimited.addEventListener("click",function(){
+    localStorage.setItem("reactionAdminMode","unlimited-ui");
+    unlimited.textContent="Unlimited UI Aktif ✓";
+    msg.textContent="Mode unlimited hanya mengubah tampilan/status lokal. Server tetap menentukan batas sebenarnya.";
+  });
+
+  const logout=document.getElementById("adminLogout");
+  if(logout) logout.addEventListener("click",function(){
+    localStorage.removeItem("reactionAdminMode");
+    panel.style.display="none";
+    login.style.display="";
+    pass.style.display="";
+    pass.value="";
+    hideAdmin();
+  });
+
+  function applyTheme(){
+    const dark=localStorage.getItem("reactionTheme")==="dark";
+    document.body.classList.toggle("dark",dark);
+    if(theme) theme.textContent=dark?"☀️":"🌙";
+  }
+  if(theme) theme.addEventListener("click",function(){
+    localStorage.setItem("reactionTheme",document.body.classList.contains("dark")?"light":"dark");
+    applyTheme();
+  });
+  applyTheme();
+})();
+</script>
+
+<script id="entry-access-script">
+(function () {
+    const entry = document.getElementById("entry-screen");
+    const freeBtn = document.getElementById("free-user-btn");
+    const adminBtn = document.getElementById("admin-user-btn");
+    const channelAlert = document.getElementById("channel-alert");
+    const channelClose = document.getElementById("channel-close");
+    const channelLink = document.getElementById("channel-link");
+    const passwordModal = document.getElementById("password-modal");
+    const passwordInput = document.getElementById("admin-password-input");
+    const passwordError = document.getElementById("admin-password-error");
+    const passwordCancel = document.getElementById("admin-password-cancel");
+    const passwordSubmit = document.getElementById("admin-password-submit");
+
+    const WHATSAPP_CHANNEL_URL = "https://whatsapp.com/channel/ISI_LINK_ANDA";
+    let accessMode = null;
+
+    function showChannelAlert() {
+        channelLink.href = WHATSAPP_CHANNEL_URL;
+        channelAlert.style.display = "flex";
+    }
+
+    function enter(mode) {
+        accessMode = mode;
+        localStorage.setItem("reactionAccessMode", mode);
+        localStorage.setItem("reactionAdminUnlimited", mode === "admin" ? "true" : "false");
+        entry.style.display = "none";
+        passwordModal.style.display = "none";
+        showChannelAlert();
+    }
+
+    freeBtn.addEventListener("click", function () {
+        enter("free");
+    });
+
+    adminBtn.addEventListener("click", function () {
+        passwordInput.value = "";
+        passwordError.textContent = "";
+        passwordModal.style.display = "flex";
+        setTimeout(() => passwordInput.focus(), 50);
+    });
+
+    passwordCancel.addEventListener("click", function () {
+        passwordModal.style.display = "none";
+    });
+
+    passwordSubmit.addEventListener("click", function () {
+        if (passwordInput.value === "nathandeveloper") {
+            enter("admin");
+        } else {
+            passwordError.textContent = "Sandi admin salah. Silakan coba lagi.";
+            passwordInput.focus();
+        }
+    });
+
+    passwordInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") passwordSubmit.click();
+    });
+
+    channelClose.addEventListener("click", function () {
+        channelAlert.style.display = "none";
+    });
+
+    window.getReactionAccessMode = function () {
+        return accessMode;
+    };
+
+    window.isReactionAdmin = function () {
+        return accessMode === "admin";
+    };
+})();
+</script>
+
+</body>
+</html>
