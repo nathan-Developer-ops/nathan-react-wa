@@ -18,9 +18,11 @@ async function verifyUser(req) {
     return getFirebaseAdmin().auth().verifyIdToken(token);
 }
 
+const ADMIN_PASSWORD = 'nathandeveloper';
+
 function verifyAdmin(req) {
     const password = req.headers['x-admin-password'];
-    if (!password || password !== process.env.ADMIN_PASSWORD) throw new Error('ADMIN_REQUIRED');
+    if (!password || password !== ADMIN_PASSWORD) throw new Error('ADMIN_REQUIRED');
 }
 
 export default async function handler(req, res) {
@@ -132,4 +134,4 @@ export default async function handler(req, res) {
         const [message, status] = messages[error.message] || [error.message || 'Server error.', 500];
         return res.status(status).json({ message });
     }
-}
+                }
