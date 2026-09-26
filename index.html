@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
+    <title>WA Channel Reaction</title>
+    <style>
+        :root {
+            --bg: #f4f7fb;
+            --card: #ffffff;
+            --text: #111827;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --primary: #16a34a;
+            --primary-dark: #15803d;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
+        }
+
+        body.dark {
+            --bg: #0b1120;
+            --card: #111827;
+            --text: #f9fafb;
+            --muted: #9ca3af;
+            --border: #243044;
+            --shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top right, rgba(22, 163, 74, 0.14), transparent 35%),
+                var(--bg);
+            transition: background 0.25s, color 0.25s;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .app {
+            width: min(100%, 560px);
+            min-height: 100vh;
+            margin: auto;
+            padding: 18px 16px 36px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--primary);
+            color: white;
+            font-size: 22px;
+            box-shadow: 0 10px 25px rgba(22, 163, 74, 0.25);
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        .brand p {
+            margin: 3px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .icon-btn {
+            width: 42px;
+            height: 42px;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            background: var(--card);
+            color: var(--text);
+        }
+
+        .hero {
+            padding: 24px;
+            border-radius: 24px;
+            background: linear-gradient(145deg, #16a34a, #15803d);
+            color: white;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+
+        .hero small {
+            opacity: 0.82;
+            font-weight: 700;
+        }
+
+        .hero h2 {
+            margin: 8px 0 8px;
+            font-size: 28px;
+            line-height: 1.15;
+        }
+
+        .hero p {
+            margin: 0;
+            line-height: 1.6;
+            opacity: 0.92;
+            font-size: 14px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            margin: 0 0 4px;
+            font-size: 17px;
+        }
+
+        .card-subtitle {
+            margin: 0 0 18px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .field {
+            margin-bottom: 15px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .input,
+        .captcha-input {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            padding: 13px 14px;
+            outline: none;
+            color: var(--text);
+            background: var(--card);
+        }
+
+        .input:focus,
+        .captcha-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+        }
+
+        .reaction-input-wrap {
+            position: relative;
+        }
+
+        .reaction-input {
+            padding-left: 48px !important;
+            font-size: 16px;
+        }
+
+        .reaction-input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 21px;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .reaction-help {
+            margin-top: 7px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .reaction-box {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .emoji {
+            width: 48px;
+            height: 44px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--card);
+            font-size: 23px;
+        }
+
+        .emoji.active {
+            border-color: var(--primary);
+            background: rgba(22, 163, 74, 0.10);
+            transform: translateY(-1px);
+        }
+
+        .selected-reactions {
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 9px;
+            padding: 8px 10px;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .captcha-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+        }
+
+        .captcha-code {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 47px;
+            border-radius: 13px;
+            border: 1px solid var(--border);
+            background: repeating-linear-gradient(135deg, #eef2ff 0, #eef2ff 7px, #e0e7ff 7px, #e0e7ff 14px);
+            color: #111827;
+            font-weight: 900;
+            letter-spacing: 6px;
+            font-size: 19px;
+            user-select: none;
+            text-decoration: line-through;
+        }
+
+        .captcha-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .mini-btn {
+            border: 0;
+            background: transparent;
+            color: var(--primary);
+            padding: 4px 0;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .primary-btn,
+        .secondary-btn {
+            width: 100%;
+            border: 0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            font-weight: 800;
+        }
+
+        .primary-btn {
+            color: white;
+            background: var(--primary);
+            box-shadow: 0 10px 22px rgba(22, 163, 74, 0.22);
+        }
+
+        .primary-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .primary-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .secondary-btn {
+            color: var(--text);
+            background: var(--bg);
+            border: 1px solid var(--border);
+            margin-top: 9px;
+        }
+
+        .access-card {
+            overflow: hidden;
+        }
+
+        .access-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .access-icon {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+            box-shadow: 0 10px 24px rgba(22, 163, 74, 0.22);
+            font-size: 21px;
+        }
+
+        .access-options {
+            display: grid;
+            gap: 10px;
+        }
+
+        .access-option {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 17px;
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .access-option:hover {
+            transform: translateY(-2px);
+            border-color: rgba(22, 163, 74, 0.45);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        .access-option-icon {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 42px;
+            border-radius: 13px;
+            background: rgba(22, 163, 74, 0.1);
+            font-size: 19px;
+        }
+
+        .admin-option .access-option-icon {
+            background: rgba(234, 179, 8, 0.13);
+        }
+
+        .access-option-text {
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex: 1;
+        }
+
+        .access-option-text strong {
+            font-size: 14px;
+        }
+
+        .access-option-text small {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .access-arrow {
+            color: var(--muted);
+            font-size: 25px;
+            line-height: 1;
+        }
+
+        .admin-login-box {
+            margin-top: 4px;
+            padding: 15px;
+            border: 1px solid rgba(22, 163, 74, 0.2);
+            border-radius: 17px;
+            background: rgba(22, 163, 74, 0.055);
+        }
+
+        .login-title {
+            font-size: 15px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .admin-login-box > p {
+            margin: 0 0 13px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .access-note {
+            margin-top: 13px;
+            color: var(--muted);
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .mode-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 10px;
+            margin-bottom: 11px;
+            border-radius: 999px;
+            background: rgba(22, 163, 74, 0.1);
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .quota {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 13px 14px;
+            border-radius: 15px;
+            background: rgba(22, 163, 74, 0.08);
+            border: 1px solid rgba(22, 163, 74, 0.18);
+            margin-bottom: 15px;
+        }
+
+        .quota strong {
+            font-size: 20px;
+        }
+
+        .quota span {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .result {
+            display: none;
+            border-radius: 16px;
+            padding: 14px;
+            margin-top: 14px;
+            line-height: 1.55;
+            font-size: 13px;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.success {
+            background: rgba(22, 163, 74, 0.10);
+            border: 1px solid rgba(22, 163, 74, 0.25);
+        }
+
+        .result.error {
+            background: rgba(220, 38, 38, 0.10);
+            border: 1px solid rgba(220, 38, 38, 0.25);
+        }
+
+        .result-title {
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .history-item {
+            padding: 13px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-item:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .history-url {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .admin-panel {
+            display: none;
+        }
+
+        .admin-panel.show {
+            display: block;
+        }
+
+        .admin-badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: rgba(22, 163, 74, 0.12);
+            color: var(--primary);
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 22px;
+            z-index: 50;
+            width: min(calc(100% - 32px), 480px);
+            transform: translate(-50%, 130px);
+            opacity: 0;
+            padding: 13px 15px;
+            border-radius: 14px;
+            color: white;
+            background: #111827;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+            transition: 0.25s ease;
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .toast.show {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+
+        .footer {
+            color: var(--muted);
+            text-align: center;
+            font-size: 11px;
+            padding: 4px 0 20px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 420px) {
+            .app {
+                padding: 14px 12px 30px;
+            }
+
+            .hero {
+                padding: 21px;
+            }
+
+            .hero h2 {
+                font-size: 25px;
+            }
+        }
+
+        /* ===== Premium UI ===== */
+        body {
+            background:
+                radial-gradient(circle at 10% 0%, rgba(22, 163, 74, 0.14), transparent 28%),
+                radial-gradient(circle at 100% 15%, rgba(59, 130, 246, 0.10), transparent 25%),
+                var(--bg);
+        }
+
+        .app {
+            width: min(100%, 620px);
+            padding: 18px 14px 42px;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 10px;
+            z-index: 20;
+            padding: 10px;
+            margin: 0 -2px 18px;
+            border: 1px solid rgba(255,255,255,.55);
+            border-radius: 20px;
+            background: color-mix(in srgb, var(--card) 82%, transparent);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 12px 35px rgba(15,23,42,.08);
+        }
+
+        .brand-icon {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(145deg, #22c55e, #15803d);
+        }
+
+        .brand-icon::after {
+            content: '';
+            position: absolute;
+            width: 70px;
+            height: 20px;
+            background: rgba(255,255,255,.22);
+            transform: rotate(-35deg) translateX(-30px);
+            animation: shine 3.5s infinite;
+        }
+
+        @keyframes shine {
+            0%, 55% { transform: translateX(-80px) rotate(-35deg); }
+            80%, 100% { transform: translateX(90px) rotate(-35deg); }
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: 28px 22px;
+            border: 1px solid rgba(255,255,255,.18);
+            background:
+                radial-gradient(circle at 85% 10%, rgba(255,255,255,.22), transparent 22%),
+                linear-gradient(145deg, #16a34a 0%, #15803d 55%, #166534 100%);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            right: -70px;
+            bottom: -90px;
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 50%;
+            box-shadow: 0 0 0 25px rgba(255,255,255,.04), 0 0 0 50px rgba(255,255,255,.03);
+        }
+
+        .hero h2 {
+            max-width: 430px;
+            font-size: clamp(25px, 7vw, 34px);
+            letter-spacing: -.8px;
+        }
+
+        .hero p { max-width: 450px; }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 999px;
+            background: rgba(255,255,255,.10);
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .card {
+            border-radius: 24px;
+            box-shadow: 0 16px 45px rgba(15,23,42,.08);
+        }
+
+        .card-title { letter-spacing: -.2px; }
+
+        .input, .captcha-input {
+            min-height: 48px;
+            border-radius: 15px;
+            transition: .2s ease;
+        }
+
+        .input::placeholder, .captcha-input::placeholder { color: var(--muted); opacity: .75; }
+
+        .reaction-box { gap: 9px; }
+
+        .emoji {
+            flex: 1 0 21%;
+            min-width: 54px;
+            height: 52px;
+            border-radius: 15px;
+            transition: .18s ease;
+        }
+
+        .emoji:hover { transform: translateY(-2px); }
+
+        .emoji.active {
+            box-shadow: 0 8px 20px rgba(22,163,74,.18);
+        }
+
+        .selected-reactions {
+            min-height: 48px;
+            justify-content: center;
+            background: var(--bg);
+            font-size: 20px;
+        }
+
+        .captcha-code {
+            min-height: 48px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #ecfdf5, #dbeafe);
+            border-color: #bbf7d0;
+            color: #14532d;
+            text-decoration: none;
+        }
+
+        .captcha-code::before,
+        .captcha-code::after {
+            content: '';
+            position: absolute;
+            width: 150%;
+            height: 1px;
+            background: rgba(22,101,52,.18);
+            transform: rotate(14deg);
+        }
+
+        .captcha-code::after { transform: rotate(-9deg); }
+
+        .captcha-code span { position: relative; z-index: 2; }
+
+        .primary-btn {
+            min-height: 50px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #22c55e, #15803d);
+            transition: .2s ease;
+        }
+
+        .primary-btn:not(:disabled):hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(22,163,74,.25);
+        }
+
+        .secondary-btn { min-height: 48px; border-radius: 15px; }
+
+        .quota {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, rgba(22,163,74,.10), rgba(59,130,246,.06));
+        }
+
+        .quota strong { font-size: 24px; }
+
+        /* Result card: never render raw API response/link directly */
+        .result {
+            padding: 0;
+            margin-top: 16px;
+            overflow: hidden;
+            background: var(--card);
+            border: 1px solid var(--border);
+            box-shadow: 0 15px 35px rgba(15,23,42,.07);
+        }
+
+        .result.success, .result.error { border-color: var(--border); }
+
+        .result-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-icon {
+            width: 42px;
+            height: 42px;
+            flex: 0 0 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            font-size: 20px;
+            background: rgba(22,163,74,.12);
+        }
+
+        .result.error .result-icon { background: rgba(220,38,38,.12); }
+
+        .result-title { margin: 0; font-size: 15px; }
+        .result-subtitle { margin-top: 3px; color: var(--muted); font-size: 11px; }
+
+        .result-body { padding: 14px 16px 16px; }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            margin-bottom: 12px;
+        }
+
+        .result-stat {
+            min-width: 0;
+            padding: 11px;
+            border-radius: 13px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+        }
+
+        .result-stat small {
+            display: block;
+            color: var(--muted);
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+
+        .result-stat strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+
+        .channel-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            padding: 11px 12px;
+            border-radius: 14px;
+            background: rgba(22,163,74,.08);
+            border: 1px solid rgba(22,163,74,.18);
+        }
+
+        .channel-chip-icon { font-size: 18px; }
+        .channel-chip-text { min-width: 0; }
+        .channel-chip-text small { display: block; color: var(--muted); font-size: 10px; }
+        .channel-chip-text strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+        .result-link {
+            display: block;
+            margin-top: 10px;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            background: linear-gradient(135deg, #22c55e, #15803d);
+            padding: 12px;
+            border-radius: 13px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .result-note {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        .history-item {
+            padding: 14px 0;
+        }
+
+        .history-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-emoji {
+            width: 40px;
+            height: 40px;
+            flex: 0 0 40px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--bg);
+            font-size: 18px;
+        }
+
+        .history-content { min-width: 0; flex: 1; }
+        .history-url { font-weight: 700; color: var(--text); }
+        .history-status { color: var(--primary); font-weight: 700; }
+
+        @media (max-width: 420px) {
+            .result-grid { grid-template-columns: 1fr 1fr; }
+            .emoji { min-width: 48px; }
+        }
+
+    </style>
+</head>
+<body>
+    <main class="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-icon">💬</div>
+                <div>
+                    <h1>WA Channel Reaction</h1>
+                    <p>Reaction sederhana & cepat</p>
+                </div>
+            </div>
+            <button class="icon-btn" id="theme-btn" type="button" aria-label="Ubah tema">🌙</button>
+        </header>
+
+        <section class="hero">
+            <div class="hero-badge">● WHATSAPP CHANNEL</div>
+            <h2>Kirim Reaction ke Channel</h2>
+            <p>Pilih emoji, masukkan link channel WhatsApp, lalu verifikasi kode keamanan.</p>
+        </section>
+
+        <section class="card access-card" id="access-card">
+            <div class="access-head">
+                <span class="access-icon">⚡</span>
+                <div>
+                    <h3 class="card-title">Pilih akses</h3>
+                    <p class="card-subtitle">Pilih sekali untuk masuk ke menu utama.</p>
+                </div>
+            </div>
+
+            <div class="access-options" id="access-options">
+                <button class="access-option free-option" id="free-btn" type="button">
+                    <span class="access-option-icon">🆓</span>
+                    <span class="access-option-text">
+                        <strong>Free User</strong>
+                        <small>2 token setiap 7 jam</small>
+                    </span>
+                    <span class="access-arrow">›</span>
+                </button>
+
+                <button class="access-option admin-option" id="admin-btn" type="button">
+                    <span class="access-option-icon">👑</span>
+                    <span class="access-option-text">
+                        <strong>Admin User</strong>
+                        <small>Unlimited • Password diperlukan</small>
+                    </span>
+                    <span class="access-arrow">›</span>
+                </button>
+            </div>
+
+            <div class="admin-login-box hidden" id="admin-login">
+                <div class="login-title">🔐 Verifikasi Admin</div>
+                <p>Masukkan password admin untuk melanjutkan.</p>
+                <div class="field" style="margin-bottom:10px;">
+                    <label for="admin-password">Password Admin</label>
+                    <input class="input" id="admin-password" type="password" placeholder="Masukkan password" autocomplete="off">
+                </div>
+                <button class="primary-btn" id="admin-confirm" type="button">Masuk ke Menu</button>
+            </div>
+
+            <div class="access-note">Setelah memilih akses, pilihan tidak dapat diganti selama halaman ini terbuka.</div>
+        </section>
+
+        <section class="card hidden" id="reaction-card">
+            <div class="mode-badge" id="mode-badge">● FREE USER</div>
+            <h3 class="card-title">Kirim reaction</h3>
+            <p class="card-subtitle">Maksimal 4 emoji dalam satu request.</p>
+
+            <div class="field">
+                <label for="channel-url">Link WhatsApp Channel</label>
+                <input class="input" id="channel-url" type="url" inputmode="url" placeholder="https://whatsapp.com/channel/..." autocomplete="off">
+            </div>
+
+            <div class="field">
+                <label for="reaction-input">Reaction Emoji</label>
+                <div class="reaction-input-wrap">
+                    <span class="reaction-input-icon">😊</span>
+                    <input class="input reaction-input" id="reaction-input" type="text" placeholder="❤️,🔥,😂,👍" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="reaction-help">Bebas pilih emoji. Jika lebih dari satu, pisahkan dengan koma (,).</div>
+                <div class="selected-reactions" id="selected-reactions">Belum ada emoji dipilih.</div>
+            </div>
+
+            <div class="field">
+                <label>CAPTCHA</label>
+                <div class="captcha-row">
+                    <div class="captcha-code" id="captcha-code"><span></span></div>
+                    <input class="captcha-input" id="captcha-input" type="text" maxlength="5" placeholder="Masukkan kode" autocomplete="off" autocapitalize="characters">
+                </div>
+                <div class="captcha-actions">
+                    <button class="mini-btn" id="captcha-refresh" type="button">↻ Kode baru</button>
+                </div>
+            </div>
+
+            <button class="primary-btn" id="send-btn" type="button">Kirim Reaction</button>
+            <div class="result" id="result"></div>
+        </section>
+
+        <section class="card hidden" id="admin-card">
+            <span class="admin-badge">ADMIN MODE</span>
+            <h3 class="card-title">Admin aktif</h3>
+            <p class="card-subtitle">Mode admin tidak memakai limit frontend.</p>
+            <button class="secondary-btn" id="admin-logout" type="button">Keluar Admin</button>
+        </section>
+
+        <section class="card hidden" id="history-card">
+            <h3 class="card-title">Riwayat</h3>
+            <p class="card-subtitle">Riwayat tersimpan hanya di perangkat ini.</p>
+            <div id="history-list"></div>
+        </section>
+
+        <div class="footer">WA Channel Reaction • Vercel</div>
+    </main>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const DAILY_LIMIT = 2;
+        const LIMIT_WINDOW = 7 * 60 * 60 * 1000;
+        const ADMIN_PASSWORD = 'nathandeveloper';
+        const API_BASE_URL = '/api/rch';
+        const HISTORY_KEY = 'waReactionHistoryVercel';
+        const LIMIT_KEY = 'waReactionLimitVercel';
+        const THEME_KEY = 'waReactionTheme';
+
+        let selectedReactions = [];
+        let captchaCode = '';
+        let isAdmin = false;
+
+        const $ = (id) => document.getElementById(id);
+
+        function showToast(message) {
+            const toast = $('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(showToast.timer);
+            showToast.timer = setTimeout(() => toast.classList.remove('show'), 2800);
+        }
+
+        function generateCaptcha() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            captchaCode = '';
+
+            for (let i = 0; i < 5; i++) {
+                captchaCode += chars[Math.floor(Math.random() * chars.length)];
+            }
+
+            $('captcha-code').querySelector('span').textContent = captchaCode;
+            $('captcha-input').value = '';
+        }
+
+        function getLimitData() {
+            try {
+                const data = JSON.parse(localStorage.getItem(LIMIT_KEY) || '{}');
+
+                if (!data.startedAt || Date.now() - data.startedAt >= LIMIT_WINDOW) {
+                    return {
+                        count: 0,
+                        startedAt: Date.now()
+                    };
+                }
+
+                return data;
+            } catch {
+                return {
+                    count: 0,
+                    startedAt: Date.now()
+                };
+            }
+        }
+
+        function saveLimitData(data) {
+            localStorage.setItem(LIMIT_KEY, JSON.stringify(data));
+        }
+
+        function getRemainingTokens() {
+            if (isAdmin) {
+                return Infinity;
+            }
+
+            const data = getLimitData();
+            return Math.max(0, DAILY_LIMIT - data.count);
+        }
+
+        function updateQuota() {
+            const remaining = getRemainingTokens();
+            $('quota-value').textContent = isAdmin ? '∞' : remaining;
+            $('quota-label').textContent = isAdmin ? 'unlimited' : 'token tersedia';
+            $('quota-time').textContent = isAdmin ? 'Admin mode' : 'Reset setelah 7 jam';
+        }
+
+        function useToken() {
+            if (isAdmin) {
+                return;
+            }
+
+            const data = getLimitData();
+            data.count += 1;
+            saveLimitData(data);
+            updateQuota();
+        }
+
+        function showReactionPanel() {
+            $('reaction-card').classList.remove('hidden');
+            $('history-card').classList.remove('hidden');
+            $('access-card').classList.add('hidden');
+            $('mode-badge').textContent = isAdmin ? '● ADMIN USER • UNLIMITED' : '● FREE USER • 2 TOKEN / 7 JAM';
+            $('reaction-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function parseReactionInput(value) {
+            return value
+                .split(',')
+                .map(item => item.trim())
+                .filter(Boolean);
+        }
+
+        function updateReactionPreview() {
+            selectedReactions = parseReactionInput($('reaction-input').value);
+            $('selected-reactions').textContent = selectedReactions.length
+                ? selectedReactions.join('  •  ')
+                : 'Belum ada emoji dipilih.';
+        }
+
+        function isValidChannelUrl(value) {
+            try {
+                const url = new URL(value);
+                return url.protocol === 'https:' && url.hostname === 'whatsapp.com' && url.pathname.startsWith('/channel/');
+            } catch {
+                return false;
+            }
+        }
+
+        function saveHistory(item) {
+            let history = [];
+
+            try {
+                history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            } catch {
+                history = [];
+            }
+
+            history.unshift(item);
+            history = history.slice(0, 10);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            renderHistory();
+        }
+
+        function getChannelLabel(url) {
+            try {
+                const parsed = new URL(url);
+                const parts = parsed.pathname.split('/').filter(Boolean);
+                const code = parts[1] || '';
+                return code ? 'Channel ' + code.slice(0, 8) + (code.length > 8 ? '…' : '') : 'WhatsApp Channel';
+            } catch {
+                return 'WhatsApp Channel';
+            }
+        }
+
+        function renderHistory() {
+            const list = $('history-list');
+            let history = [];
+
+            try {
+                history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            } catch {
+                history = [];
+            }
+
+            if (!history.length) {
+                list.innerHTML = '<div style="color:var(--muted);font-size:13px;">Belum ada riwayat reaction.</div>';
+                return;
+            }
+
+            list.innerHTML = history.map(item => `
+                <div class="history-item">
+                    <div class="history-row">
+                        <div class="history-emoji">${escapeHtml(item.reaction || '❤️')}</div>
+                        <div class="history-content">
+                            <div class="history-url">${escapeHtml(item.channelLabel || getChannelLabel(item.url))}</div>
+                            <div class="history-meta">
+                                <span class="history-status">✓ ${escapeHtml(item.status || 'Berhasil')}</span>
+                                <span>${escapeHtml(item.time || '-')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            })[char]);
+        }
+
+        function getSafeResponseInfo(data, fallbackText) {
+            const source = data && typeof data === 'object' ? data : {};
+            const nested = source.result && typeof source.result === 'object' ? source.result : {};
+
+            return {
+                status: String(source.status || nested.status || 'success'),
+                deducted: source.deducted ?? nested.deducted ?? null,
+                remaining: source.limit_remaining ?? nested.limit_remaining ?? null,
+                responseTime: source.response_time || source.responseTime || nested.response_time || nested.responseTime || null,
+                channel: source.target_channel || source.url || nested.target_channel || nested.url || null,
+                message: String(source.message || nested.message || '')
+            };
+        }
+
+        function showResult(success, info = {}) {
+            const result = $('result');
+            result.className = 'result show ' + (success ? 'success' : 'error');
+
+            const channel = info.channel || '';
+            const label = channel ? getChannelLabel(channel) : 'WhatsApp Channel';
+            const status = success ? 'Berhasil diproses' : 'Request gagal';
+            const icon = success ? '✓' : '×';
+            const deducted = info.deducted !== null && info.deducted !== undefined ? String(info.deducted) : '-';
+            const remaining = isAdmin ? '∞' : String(getRemainingTokens());
+            const responseTime = info.responseTime ? String(info.responseTime) : '-';
+
+            result.innerHTML = `
+                <div class="result-head">
+                    <div class="result-icon">${icon}</div>
+                    <div>
+                        <div class="result-title">${escapeHtml(status)}</div>
+                        <div class="result-subtitle">${success ? 'Reaction telah diterima oleh server.' : 'Server tidak menerima request dengan benar.'}</div>
+                    </div>
+                </div>
+                <div class="result-body">
+                    <div class="result-grid">
+                        <div class="result-stat">
+                            <small>Reaction</small>
+                            <strong>${escapeHtml(info.reaction || '-')}</strong>
+                        </div>
+                        <div class="result-stat">
+                            <small>Token</small>
+                            <strong>${escapeHtml(remaining)} tersisa</strong>
+                        </div>
+                        <div class="result-stat">
+                            <small>Potongan</small>
+                            <strong>${escapeHtml(deducted)}</strong>
+                        </div>
+                        <div class="result-stat">
+                            <small>Waktu respons</small>
+                            <strong>${escapeHtml(responseTime)}</strong>
+                        </div>
+                    </div>
+                    <div class="channel-chip">
+                        <div class="channel-chip-icon">📣</div>
+                        <div class="channel-chip-text">
+                            <small>Target channel</small>
+                            <strong>${escapeHtml(label)}</strong>
+                        </div>
+                    </div>
+                    ${success && channel ? `<a class="result-link" href="${escapeHtml(channel)}" target="_blank" rel="noopener noreferrer">Buka Channel WhatsApp ↗</a>` : ''}
+                    ${!success && info.message ? `<div class="result-note">${escapeHtml(info.message.slice(0, 180))}</div>` : ''}
+                </div>
+            `;
+        }
+
+        async function sendReaction() {
+            const url = $('channel-url').value.trim();
+            const captcha = $('captcha-input').value.trim().toUpperCase();
+            const button = $('send-btn');
+
+            if (!isValidChannelUrl(url)) {
+                showToast('Masukkan link WhatsApp Channel yang valid.');
+                return;
+            }
+
+            updateReactionPreview();
+
+            if (!selectedReactions.length) {
+                showToast('Masukkan minimal 1 emoji.');
+                return;
+            }
+
+            if (captcha !== captchaCode) {
+                showToast('CAPTCHA salah.');
+                generateCaptcha();
+                return;
+            }
+
+            if (!isAdmin && getRemainingTokens() <= 0) {
+                showToast('Token Free User sudah habis.');
+                updateQuota();
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'Mengirim reaction...';
+            showResult(true, {
+                reaction: selectedReactions.join(','),
+                channel: url,
+                responseTime: 'Memproses'
+            });
+
+            try {
+                const query = new URLSearchParams({
+                    url,
+                    reaction: selectedReactions.join(',')
+                });
+
+                const response = await fetch(`${API_BASE_URL}?${query.toString()}`);
+                const rawText = await response.text();
+                let data;
+
+                try {
+                    data = JSON.parse(rawText);
+                } catch {
+                    data = { message: rawText };
+                }
+
+                const info = getSafeResponseInfo(data, rawText);
+                info.channel = url;
+                info.reaction = selectedReactions.join(',');
+
+                if (!response.ok) {
+                    showResult(false, info);
+                    return;
+                }
+
+                useToken();
+                saveHistory({
+                    url,
+                    channelLabel: getChannelLabel(url),
+                    reaction: selectedReactions.join(','),
+                    status: 'Berhasil',
+                    time: new Date().toLocaleString('id-ID')
+                });
+
+                showResult(true, info);
+                showToast(isAdmin ? 'Reaction berhasil dikirim.' : 'Reaction berhasil dikirim. 1 token terpakai.');
+                generateCaptcha();
+                $('captcha-input').focus();
+            } catch (error) {
+                console.error(error);
+                showResult(false, {
+                    channel: url,
+                    reaction: selectedReactions.join(','),
+                    message: 'Tidak dapat menghubungi server Vercel.'
+                });
+                showToast('Koneksi ke server gagal.');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Kirim Reaction';
+            }
+        }
+
+        function openAdmin() {
+            $('access-options').classList.add('hidden');
+            $('admin-login').classList.remove('hidden');
+            $('admin-password').focus();
+        }
+
+        function confirmAdmin() {
+            const password = $('admin-password').value;
+
+            if (password !== ADMIN_PASSWORD) {
+                showToast('Password admin salah.');
+                $('admin-password').value = '';
+                return;
+            }
+
+            isAdmin = true;
+            $('admin-password').value = '';
+            $('admin-card').classList.remove('show');
+            showReactionPanel();
+            updateQuota();
+            showToast('Admin mode aktif.');
+        }
+
+        function applyTheme() {
+            const saved = localStorage.getItem(THEME_KEY);
+            const dark = saved === 'dark';
+            document.body.classList.toggle('dark', dark);
+            $('theme-btn').textContent = dark ? '☀️' : '🌙';
+        }
+
+        $('free-btn').addEventListener('click', () => {
+            isAdmin = false;
+            $('admin-card').classList.remove('show');
+            showReactionPanel();
+            updateQuota();
+            showToast('Free User dipilih.');
+        });
+
+        $('admin-btn').addEventListener('click', openAdmin);
+        $('admin-confirm').addEventListener('click', confirmAdmin);
+
+        $('admin-password').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                confirmAdmin();
+            }
+        });
+        $('send-btn').addEventListener('click', sendReaction);
+        $('captcha-refresh').addEventListener('click', generateCaptcha);
+
+        $('theme-btn').addEventListener('click', () => {
+            const dark = !document.body.classList.contains('dark');
+            document.body.classList.toggle('dark', dark);
+            localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+            $('theme-btn').textContent = dark ? '☀️' : '🌙';
+        });
+
+        $('reaction-input').addEventListener('input', updateReactionPreview);
+
+        applyTheme();
+        generateCaptcha();
+        updateQuota();
+        renderHistory();
+    </script>
+</body>
+</html>
