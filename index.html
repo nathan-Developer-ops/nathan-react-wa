@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#111827">
+    <title>Nat React • WhatsApp Channel</title>
+    <style>
+
+:root {
+    --bg: #e9e9e9;
+    --paper: #ffffff;
+    --ink: #111111;
+    --muted: #6f737d;
+    --line: #111111;
+    --purple: #6366e8;
+    --purple-dark: #4e50c7;
+    --yellow: #ffc20d;
+    --yellow-dark: #e39e00;
+    --green: #22b86a;
+    --red: #f0474d;
+    --soft: #f3f4f7;
+    --shadow: 8px 8px 0 #111111;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: var(--bg);
+    background-image: radial-gradient(#111 1.6px, transparent 1.6px);
+    background-size: 48px 48px;
+}
+body.dark {
+    --bg: #15171d;
+    --paper: #22252d;
+    --ink: #f7f7f7;
+    --muted: #b6bac5;
+    --line: #050505;
+    --soft: #30343e;
+    background-color: #15171d;
+    background-image: radial-gradient(#d9dbe2 1.4px, transparent 1.4px);
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.hidden { display: none !important; }
+
+.app {
+    width: min(100%, 720px);
+    margin: 0 auto;
+    padding: 18px 14px 46px;
+}
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-icon {
+    width: 48px;
+    height: 48px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    border: 4px solid var(--ink);
+    border-radius: 16px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 1000;
+    box-shadow: 4px 4px 0 var(--ink);
+}
+.brand-icon img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+}
+
+
+
+.brand h1 { margin: 0; font-size: 16px; font-weight: 1000; letter-spacing: .5px; text-transform: uppercase; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.icon-btn {
+    min-width: 56px;
+    height: 40px;
+    padding: 0 10px;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 9px;
+    font-weight: 1000;
+    box-shadow: 4px 4px 0 var(--ink);
+}
+
+.hero {
+    position: relative;
+    margin-bottom: 16px;
+    padding: 20px 20px 18px;
+    border: 4px solid var(--ink);
+    border-radius: 25px;
+    background: var(--paper);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+.hero:after {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: -60px;
+    top: -75px;
+    border-radius: 50%;
+    background: var(--purple);
+    opacity: .14;
+}
+.hero-badge, .mode-badge, .admin-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: 7px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 1000;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+}
+.access-status {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    margin: 8px 0 0;
+    padding: 7px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    background: var(--soft);
+    color: var(--ink);
+    font-size: 9px;
+    font-weight: 1000;
+    text-transform: uppercase;
+}
+.access-status.admin { background: #d8d8dd; }
+.access-status.free { background: #ececff; color: #3f41a7; }
+.hero h2 {
+    position: relative;
+    z-index: 1;
+    margin: 12px 0 4px;
+    font-size: clamp(27px, 7vw, 42px);
+    line-height: .98;
+    letter-spacing: -1.8px;
+    text-transform: uppercase;
+}
+.hero p { position: relative; z-index: 1; margin: 0; max-width: 540px; color: var(--muted); font-size: 11px; line-height: 1.55; font-weight: 700; }
+
+.card {
+    margin-bottom: 15px;
+    padding: 18px;
+    border: 4px solid var(--ink);
+    border-radius: 25px;
+    background: var(--paper);
+    box-shadow: var(--shadow);
+}
+.card-title { margin: 0 0 5px; font-size: 18px; font-weight: 1000; letter-spacing: -.4px; text-transform: uppercase; }
+.card-subtitle { margin: 0 0 14px; color: var(--muted); font-size: 11px; line-height: 1.5; font-weight: 700; }
+
+.access-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.access-icon {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 3px solid var(--ink);
+    border-radius: 11px;
+    background: var(--yellow);
+    font-size: 10px;
+    font-weight: 1000;
+}
+.access-options { display: grid; gap: 11px; }
+.access-option {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 70px 1fr 20px;
+    align-items: center;
+    gap: 11px;
+    padding: 14px;
+    text-align: left;
+    border: 4px solid var(--ink);
+    border-radius: 17px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 5px 5px 0 var(--ink);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.access-option:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+.access-option-icon {
+    min-width: 0;
+    min-height: 56px;
+    padding: 5px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 1000;
+}
+.admin-option .access-option-icon { background: #222; }
+.access-option-text { display: flex; flex-direction: column; gap: 3px; }
+.access-option-text strong { font-size: 14px; font-weight: 1000; text-transform: uppercase; }
+.access-option-text small { color: var(--muted); font-size: 10px; font-weight: 700; }
+.access-arrow { font-size: 25px; font-weight: 1000; line-height: 1; }
+.access-note { margin-top: 13px; color: var(--muted); font-size: 9px; line-height: 1.45; font-weight: 700; }
+
+.admin-login-box { margin-top: 14px; padding: 14px; border: 3px solid var(--ink); border-radius: 16px; background: #efefff; }
+.login-title { margin-bottom: 4px; font-size: 13px; font-weight: 1000; text-transform: uppercase; }
+.admin-login-box p { margin: 0 0 11px; color: var(--muted); font-size: 10px; font-weight: 700; }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; margin-bottom: 7px; font-size: 10px; font-weight: 1000; text-transform: uppercase; }
+.input, .captcha-input {
+    width: 100%;
+    min-height: 52px;
+    border: 4px solid var(--ink);
+    border-radius: 16px;
+    padding: 12px 14px;
+    outline: none;
+    color: var(--ink);
+    background: var(--paper);
+    font-size: 14px;
+    font-weight: 800;
+}
+.input::placeholder, .captcha-input::placeholder { color: #a7abb5; }
+.input:focus, .captcha-input:focus { border-color: var(--purple-dark); box-shadow: 0 0 0 3px rgba(99,102,232,.22); }
+
+.primary-btn, .redeem-btn {
+    border: 4px solid var(--ink);
+    border-radius: 15px;
+    min-height: 52px;
+    padding: 11px 16px;
+    color: #fff;
+    background: var(--purple);
+    font-weight: 1000;
+    text-transform: uppercase;
+    box-shadow: 5px 5px 0 var(--ink);
+}
+.primary-btn { width: 100%; }
+.primary-btn:active, .redeem-btn:active { transform: translate(3px,3px); box-shadow: 2px 2px 0 var(--ink); }
+.secondary-btn {
+    width: 100%;
+    min-height: 48px;
+    border: 4px solid var(--ink);
+    border-radius: 14px;
+    padding: 11px 14px;
+    color: var(--ink);
+    background: var(--paper);
+    font-weight: 1000;
+    text-transform: uppercase;
+}
+
+#quota-card {
+    padding: 16px;
+    background: var(--paper);
+}
+.quota-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.quota-title { font-size: 13px; font-weight: 1000; text-transform: uppercase; }
+.quota-subtitle, .redeem-info { margin-top: 4px; color: var(--muted); font-size: 9px; font-weight: 800; }
+.quota-number {
+    min-width: 132px;
+    min-height: 74px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 4px solid var(--ink);
+    border-radius: 17px;
+    background: linear-gradient(135deg, #ffd51d, #ffb000);
+    color: #111;
+    font-size: 31px;
+    font-weight: 1000;
+    box-shadow: 5px 5px 0 var(--ink);
+}
+.quota-number:before { content: "TOKEN"; font-size: 8px; letter-spacing: .5px; }
+.quota-track { height: 9px; margin: 13px 0 9px; overflow: hidden; border: 2px solid var(--ink); border-radius: 99px; background: #eee; }
+.quota-fill { height: 100%; border-radius: inherit; background: var(--purple); }
+.quota-bottom { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 9px; font-weight: 900; text-transform: uppercase; }
+
+.redeem-row { display: grid; grid-template-columns: 1fr auto; gap: 9px; }
+.redeem-btn { min-width: 105px; }
+.bonus-badge { margin-top: 10px; padding: 8px 10px; border: 3px solid var(--ink); border-radius: 10px; background: #d9f7e7; color: #137644; font-size: 10px; font-weight: 1000; }
+
+#reaction-card { padding: 16px; }
+#reaction-card > .mode-badge { margin-bottom: 11px; }
+.reaction-card-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+.reaction-card-head .card-title { margin: 0; }
+.limit-badge { padding: 7px 9px; border: 3px solid var(--ink); border-radius: 8px; background: #111; color: #fff; font-size: 8px; font-weight: 1000; white-space: nowrap; }
+.channel-label-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+.channel-label-row label { margin: 0; }
+.channel-badge { padding: 6px 8px; border-radius: 6px; background: var(--red); color: #fff; font-size: 8px; font-weight: 1000; text-transform: uppercase; }
+
+.reaction-input-wrap { position: relative; }
+.reaction-input { font-size: 19px; letter-spacing: 1px; }
+.reaction-input-icon { display: none; }
+.reaction-help { margin-top: 6px; color: var(--muted); font-size: 9px; line-height: 1.5; font-weight: 700; }
+.preview-box {
+    margin: 2px 0 13px;
+    padding: 15px;
+    border: 4px solid var(--ink);
+    border-radius: 16px;
+    background: var(--soft);
+    box-shadow: 5px 5px 0 var(--ink);
+}
+.preview-title { margin-bottom: 11px; text-align: center; color: var(--muted); font-size: 9px; font-weight: 1000; text-transform: uppercase; }
+.selected-reactions { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 7px; min-height: 54px; color: #a4a8b2; font-size: 13px; font-weight: 800; text-align: center; }
+.selected-reactions .preview-placeholder { width: 100%; }
+.selected-reactions .preview-emoji { width: 48px; height: 48px; display: grid; place-items: center; border: 3px solid var(--ink); border-radius: 12px; background: var(--paper); font-size: 29px; box-shadow: 3px 3px 0 var(--ink); }
+.preview-count-row { display: flex; justify-content: space-between; gap: 10px; margin-top: 8px; color: var(--muted); font-size: 9px; font-weight: 1000; text-transform: uppercase; }
+
+.captcha-row { display: grid; grid-template-columns: 145px 1fr; gap: 8px; }
+.captcha-code { min-height: 52px; display: grid; place-items: center; border: 4px dashed var(--ink); border-radius: 14px; background: var(--yellow); color: #111; font-size: 17px; font-weight: 1000; letter-spacing: 4px; }
+.captcha-actions { margin-top: 6px; }
+.mini-btn { border: 0; padding: 0; color: var(--purple-dark); background: transparent; font-size: 9px; font-weight: 1000; text-transform: uppercase; }
+.result { margin-top: 14px; }
+.result:not(:empty) { padding: 13px; border: 4px solid var(--ink); border-radius: 15px; background: var(--paper); box-shadow: 4px 4px 0 var(--ink); font-size: 11px; line-height: 1.5; }
+
+.admin-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.code-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.code-list { display: grid; gap: 8px; max-height: 360px; overflow: auto; }
+.admin-badge { background: #111; }
+.code-item { padding: 10px; border: 3px solid var(--ink); border-radius: 11px; background: var(--soft); }
+.history-item { margin-bottom: 9px; padding: 11px; border: 3px solid var(--ink); border-radius: 13px; background: var(--paper); }
+.history-emoji { display: flex !important; flex-wrap: wrap; gap: 5px; width: 100% !important; min-width: 0 !important; }
+.history-emoji-item { flex: 0 0 32px; width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid var(--ink); border-radius: 8px; background: var(--soft); font-size: 19px; }
+.history-url { margin-top: 7px; color: var(--purple-dark); font-size: 9px; word-break: break-all; font-weight: 800; }
+.history-time { margin-top: 4px; color: var(--muted); font-size: 8px; font-weight: 700; }
+.history-status { margin-top: 7px; display: inline-flex; padding: 4px 7px; border-radius: 6px; font-size: 8px; font-weight: 1000; text-transform: uppercase; }
+.history-status.ok { background: #d9f7e7; color: #137644; }
+.history-status.fail { background: #ffe1e3; color: #b4232b; }
+.empty-text { color: var(--muted); text-align: center; padding: 14px; font-size: 10px; font-weight: 700; }
+.footer { margin-top: 20px; text-align: center; color: var(--muted); font-size: 8px; font-weight: 900; text-transform: uppercase; }
+
+.follow-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(0,0,0,.72);
+    backdrop-filter: blur(8px);
+}
+.follow-modal {
+    width: min(100%, 470px);
+    padding: 31px 25px 25px;
+    border: 5px solid #111;
+    border-radius: 28px;
+    background: #fff;
+    color: #111;
+    box-shadow: 11px 11px 0 #111;
+    text-align: center;
+    animation: modalIn .22s ease-out;
+}
+.follow-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 16px;
+    display: grid;
+    place-items: center;
+    border: 5px solid #111;
+    border-radius: 20px;
+    background: var(--purple);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 1000;
+    box-shadow: 5px 5px 0 #111;
+}
+.follow-icon img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    border-radius: 14px;
+}
+.follow-modal h3 { margin: 0; font-size: 25px; font-weight: 1000; text-transform: uppercase; letter-spacing: -.7px; }
+.follow-modal p { margin: 10px auto 22px; max-width: 340px; color: #6d717a; font-size: 12px; line-height: 1.55; font-weight: 700; }
+.follow-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px;
+    border: 4px solid #111;
+    border-radius: 14px;
+    color: #fff;
+    background: var(--purple);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 1000;
+    text-transform: uppercase;
+    box-shadow: 5px 5px 0 #111;
+}
+.follow-secondary {
+    width: 100%;
+    margin-top: 11px;
+    min-height: 48px;
+    border: 4px solid #111;
+    border-radius: 14px;
+    background: #fff;
+    color: #111;
+    font-size: 11px;
+    font-weight: 1000;
+    text-transform: uppercase;
+}
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    z-index: 10000;
+    width: min(calc(100% - 28px), 430px);
+    padding: 13px 15px;
+    transform: translate(-50%, 140%);
+    opacity: 0;
+    border: 4px solid #111;
+    border-radius: 13px;
+    background: #fff;
+    color: #111;
+    box-shadow: 5px 5px 0 #111;
+    font-size: 10px;
+    font-weight: 1000;
+    transition: .2s;
+}
+.toast.show { transform: translate(-50%,0); opacity: 1; }
+@keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
+@media(max-width:620px) { .admin-tools { grid-template-columns: 1fr; } }
+@media(max-width:500px) {
+    .app { padding: 14px 10px 38px; }
+    .card, .hero { border-radius: 22px; }
+    .card { padding: 15px; }
+    .quota-number { min-width: 116px; min-height: 67px; font-size: 28px; }
+}
+@media(max-width:430px) {
+    .brand h1 { font-size: 14px; }
+    .hero { padding: 17px; }
+    .hero h2 { font-size: 30px; }
+    .access-option { grid-template-columns: 70px 1fr 17px; padding: 12px; }
+    .access-option-icon { min-height: 58px; font-size: 32px; }
+    .redeem-row { grid-template-columns: 1fr; }
+    .redeem-btn { width: 100%; }
+    .captcha-row { grid-template-columns: 1fr; }
+    .quota-top { align-items: stretch; flex-direction: column; }
+    .quota-number { width: 100%; }
+    .follow-modal { width: min(100%, 430px); padding: 29px 20px 22px; }
+    .follow-modal h3 { font-size: 21px; }
+}
+
+</style>
+</head>
+<body>
+    <main class="app">
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-icon"><img src="/nathancoder.png" alt="Nat React"></div>
+                <div>
+                    <h1>Nat React</h1>
+                    <p>WhatsApp Channel Reaction</p>
+                </div>
+            </div>
+            <button class="icon-btn" id="theme-btn" type="button" aria-label="Ubah tema">DARK</button>
+        </header>
+
+        <section class="hero">
+            <div class="hero-badge">NAT REACT</div>
+            <div class="access-status" id="access-status">Belum memilih akses</div>
+            <h2>Pilih User Dulu</h2>
+            <p>Pilih Free User atau Admin User untuk membuka menu reaction dan fitur lainnya.</p>
+        </section>
+
+        <section class="card access-card" id="access-card">
+            <div class="access-head">
+                <span class="access-icon">USER</span>
+                <div>
+                    <h3 class="card-title">Pilih akses</h3>
+                    <p class="card-subtitle">Pilih sekali untuk masuk ke menu utama.</p>
+                </div>
+            </div>
+
+            <div class="access-options" id="access-options">
+                <button class="access-option free-option" id="free-btn" type="button">
+                    <span class="access-option-icon">🆓</span>
+                    <span class="access-option-text">
+                        <strong>Free User</strong>
+                        <small>2 token setiap 7 jam</small>
+                    </span>
+                    <span class="access-arrow">›</span>
+                </button>
+
+                <button class="access-option admin-option" id="admin-btn" type="button">
+                    <span class="access-option-icon">👑</span>
+                    <span class="access-option-text">
+                        <strong>Admin User</strong>
+                        <small>Unlimited • Password diperlukan</small>
+                    </span>
+                    <span class="access-arrow">›</span>
+                </button>
+            </div>
+
+            <div class="admin-login-box hidden" id="admin-login">
+                <div class="login-title">Verifikasi Admin</div>
+                <p>Masukkan password admin untuk melanjutkan.</p>
+                <div class="field" style="margin-bottom:10px;">
+                    <label for="admin-password">Password Admin</label>
+                    <input class="input" id="admin-password" type="password" placeholder="Masukkan password" autocomplete="off">
+                </div>
+                <button class="primary-btn" id="admin-confirm" type="button">Masuk ke Menu</button>
+            </div>
+
+            <div class="access-note">Popup channel hanya tampil saat website pertama kali dibuka. Memilih user tidak akan memunculkan popup lagi.</div>
+        </section>
+
+        <section class="card hidden" id="quota-card">
+            <div class="quota-top">
+                <div>
+                    <div class="quota-title">Saldo tersedia</div>
+                    <div class="quota-subtitle" id="quota-label">token tersedia</div>
+                </div>
+                <div class="quota-number" id="quota-value">2</div>
+            </div>
+            <div class="quota-track"><div class="quota-fill" id="quota-fill"></div></div>
+            <div class="quota-bottom">
+                <span id="quota-time">Reset setelah 7 jam</span>
+                <span id="quota-countdown">7:00:00</span>
+            </div>
+        </section>
+
+        <section class="card hidden redeem-card" id="redeem-card">
+            <div class="mode-badge">FREE USER REDEEM</div>
+            <h3 class="card-title">Redeem Code</h3>
+            <p class="card-subtitle">Masukkan kode yang diberikan admin untuk mendapatkan token tambahan.</p>
+            <div class="redeem-row">
+                <input class="input redeem-code-input" id="redeem-code-input" type="text" maxlength="32" placeholder="Contoh: FREE10" autocomplete="off">
+                <button class="redeem-btn" id="redeem-btn" type="button">Redeem</button>
+            </div>
+            <div class="redeem-info" id="redeem-info">Token bonus hasil redeem tidak ikut reset bersama token Free 2 token.</div>
+            <div id="bonus-token-badge" class="bonus-badge hidden"></div>
+        </section>
+
+        <section class="card hidden" id="reaction-card">
+            <div class="mode-badge" id="mode-badge">FREE USER</div>
+            <div class="reaction-card-head">
+                <h3 class="card-title">Reaction Panel</h3>
+                <span class="limit-badge">MAX 4</span>
+            </div>
+
+            <div class="field">
+                <div class="channel-label-row">
+                    <label for="channel-url">WhatsApp Channel Link Target</label>
+                    <span class="channel-badge">WhatsApp only</span>
+                </div>
+                <input class="input" id="channel-url" type="url" inputmode="url" placeholder="https://whatsapp.com/channel/..." autocomplete="off">
+            </div>
+
+            <div class="field">
+                <label for="reaction-input">Emoji Reaction (Manual Input)</label>
+                <div class="reaction-input-wrap">
+                    <span class="reaction-input-icon">R</span>
+                    <input class="input reaction-input" id="reaction-input" type="text" placeholder="Contoh: ❤️,🔥,😂,👍" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="reaction-help">Pisahkan beberapa emoji dengan koma (,). Maksimal 4 emoji.</div>
+            </div>
+
+            <div class="preview-box">
+                <div class="preview-title">Preview</div>
+                <div class="selected-reactions" id="selected-reactions"><span class="preview-placeholder">Ketik emoji di atas...</span></div>
+                <div class="preview-count-row"><span id="preview-count">0/4 emoji</span><span>Pisahkan dengan koma (,)</span></div>
+            </div>
+
+            <div class="field">
+                <label>CAPTCHA</label>
+                <div class="captcha-row">
+                    <div class="captcha-code" id="captcha-code"><span></span></div>
+                    <input class="captcha-input" id="captcha-input" type="text" maxlength="5" placeholder="Masukkan kode" autocomplete="off" autocapitalize="characters">
+                </div>
+                <div class="captcha-actions">
+                    <button class="mini-btn" id="captcha-refresh" type="button">Kode baru</button>
+                </div>
+            </div>
+
+            <button class="primary-btn" id="send-btn" type="button">Kirim Reaction</button>
+            <div class="result" id="result"></div>
+        </section>
+
+        <section class="card hidden" id="admin-card">
+            <span class="admin-badge">ADMIN MODE</span>
+            <h3 class="card-title">Admin aktif</h3>
+            <p class="card-subtitle">Mode admin tidak memakai limit frontend.</p>
+
+            <div class="admin-tools">
+                <div>
+                    <div class="card-title" style="font-size:14px;">Buat Redeem Code</div>
+                    <p class="card-subtitle" style="margin-bottom:10px;">Atur jumlah token bonus, maksimal pemakaian, dan masa berlaku.</p>
+                    <div class="field">
+                        <label for="new-code">Kode</label>
+                        <input class="input" id="new-code" type="text" maxlength="32" placeholder="Kosong = generate otomatis" autocomplete="off">
+                    </div>
+                    <div class="code-row">
+                        <div class="field">
+                            <label for="code-tokens">Token bonus</label>
+                            <input class="input" id="code-tokens" type="number" min="1" max="10000" value="5">
+                        </div>
+                        <div class="field">
+                            <label for="code-uses">Maks. orang</label>
+                            <input class="input" id="code-uses" type="number" min="1" max="100000" value="10">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="code-expiry">Expired dalam</label>
+                        <select class="input" id="code-expiry">
+                            <option value="1">1 jam</option>
+                            <option value="6">6 jam</option>
+                            <option value="24" selected>1 hari</option>
+                            <option value="72">3 hari</option>
+                            <option value="168">7 hari</option>
+                            <option value="720">30 hari</option>
+                        </select>
+                    </div>
+                    <button class="primary-btn" id="create-code-btn" type="button">Buat Kode Redeem</button>
+                </div>
+                <div>
+                    <div class="card-title" style="font-size:14px;">Kode yang dibuat</div>
+                    <div class="code-list" id="admin-code-list"></div>
+                </div>
+            </div>
+
+            <button class="secondary-btn" id="admin-logout" type="button">Keluar Admin</button>
+        </section>
+
+        <section class="card hidden" id="history-card">
+            <h3 class="card-title">Riwayat</h3>
+            <p class="card-subtitle">Riwayat tersimpan hanya di perangkat ini.</p>
+            <div id="history-list"></div>
+        </section>
+
+        <div class="footer">Nat React • Vercel</div>
+    </main>
+
+    <div class="follow-modal-backdrop hidden" id="follow-modal-backdrop">
+        <div class="follow-modal" role="dialog" aria-modal="true" aria-labelledby="follow-modal-title">
+            <div class="follow-icon"><img src="/nathancoder.png" alt="Nat React"></div>
+            <h3 id="follow-modal-title">Ikuti Channel WhatsApp Kami</h3>
+            <p>Ikuti saluran kami untuk info lebih lanjut.</p>
+            <a class="follow-primary" href="https://whatsapp.com/channel/0029Vb8unIy1t90WF0fO321r" target="_blank" rel="noopener noreferrer" id="follow-channel-btn">Ikuti Saluran</a>
+            <button class="follow-secondary" type="button" id="follow-later-btn">Nanti saja</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script>
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyAR1jUchFO16q3dmedF8Kl7KGSuyGXqy7k",
+            authDomain: "react-wa-8c009.firebaseapp.com",
+            projectId: "react-wa-8c009",
+            storageBucket: "react-wa-8c009.firebasestorage.app",
+            messagingSenderId: "808121127144",
+            appId: "1:808121127144:web:789e0ee3108f9b22a7b95d",
+            measurementId: "G-KNKM8VM7RQ"
+        };
+
+        const DAILY_LIMIT = 2;
+        const LIMIT_WINDOW = 7 * 60 * 60 * 1000;
+        let adminPassword = '';
+        const API_BASE_URL = '/api/rch';
+        const HISTORY_KEY = 'waReactionHistoryVercel';
+        const LIMIT_KEY = 'waReactionLimitVercel';
+        const THEME_KEY = 'waReactionTheme';
+        const REDEEM_CODES_KEY = 'waReactionRedeemCodesV1';
+        const BONUS_TOKENS_KEY = 'waReactionBonusTokensV1';
+
+        let selectedReactions = [];
+        let captchaCode = '';
+        let isAdmin = false;
+        let accessSelected = false;
+
+        const $ = (id) => document.getElementById(id);
+
+        let firebaseReady = false;
+        let firebaseUser = null;
+
+        async function initFirebaseAuth() {
+            if (firebaseReady && firebaseUser) return firebaseUser;
+            if (FIREBASE_CONFIG.apiKey === 'ISI_API_KEY_FIREBASE') {
+                throw new Error('Firebase config belum diisi.');
+            }
+            if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+            const auth = firebase.auth();
+            if (!auth.currentUser) {
+                try {
+                    await auth.signInAnonymously();
+                } catch (error) {
+                    if (error && error.code === 'auth/admin-restricted-operation') {
+                        throw new Error('Firebase Anonymous Auth belum diaktifkan. Buka Firebase Console → Authentication → Sign-in method → Anonymous, lalu aktifkan.');
+                    }
+                    throw error;
+                }
+            }
+            firebaseUser = auth.currentUser;
+            firebaseReady = true;
+            return firebaseUser;
+        }
+
+        async function firebaseFetch(url, options = {}) {
+            const user = await initFirebaseAuth();
+            const token = await user.getIdToken();
+            const headers = new Headers(options.headers || {});
+            headers.set('Authorization', 'Bearer ' + token);
+            headers.set('Content-Type', 'application/json');
+            return fetch(url, { ...options, headers });
+        }
+
+        async function adminFetch(url, options = {}) {
+            const headers = new Headers(options.headers || {});
+            if (!adminPassword) throw new Error('Sesi admin belum aktif.');
+            headers.set('x-admin-password', adminPassword);
+            if (options.body !== undefined && !headers.has('Content-Type')) {
+                headers.set('Content-Type', 'application/json');
+            }
+            return fetch(url, { ...options, headers });
+        }
+
+        function showToast(message) {
+            const toast = $('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(showToast.timer);
+            showToast.timer = setTimeout(() => toast.classList.remove('show'), 2800);
+        }
+
+        function generateCaptcha() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            captchaCode = '';
+
+            for (let i = 0; i < 5; i++) {
+                captchaCode += chars[Math.floor(Math.random() * chars.length)];
+            }
+
+            $('captcha-code').querySelector('span').textContent = captchaCode;
+            $('captcha-input').value = '';
+        }
+
+        function createFreshLimitData() {
+            return {
+                count: 0,
+                startedAt: null
+            };
+        }
+
+        function getLimitData() {
+            const saved = JSON.parse(localStorage.getItem(LIMIT_KEY) || 'null');
+            if (!saved || !saved.startedAt) {
+                return { baseRemaining: DAILY_LIMIT, startedAt: null };
+            }
+
+            const baseRemaining = Number.isFinite(saved.baseRemaining) ? saved.baseRemaining : DAILY_LIMIT;
+            if (baseRemaining <= 0 && Date.now() - saved.startedAt >= LIMIT_WINDOW) {
+                return { baseRemaining: DAILY_LIMIT, startedAt: null };
+            }
+
+            return { baseRemaining: Math.max(0, Math.min(DAILY_LIMIT, baseRemaining)), startedAt: saved.startedAt };
+        }
+
+        function saveLimitData(data) {
+            localStorage.setItem(LIMIT_KEY, JSON.stringify(data));
+        }
+
+        let serverBonusTokens = 0;
+
+        function getBonusTokens() {
+            return Math.max(0, Number(serverBonusTokens) || 0);
+        }
+
+        function getRemainingTokens() {
+            if (isAdmin) return Infinity;
+            const data = getLimitData();
+            return Math.max(0, Number(data.baseRemaining) || 0) + getBonusTokens();
+        }
+
+        async function syncBonusTokens() {
+            try {
+                const response = await firebaseFetch('/api/redeem?action=balance');
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Gagal mengambil token bonus.');
+                serverBonusTokens = Math.max(0, Number(data.bonusTokens) || 0);
+                updateQuota();
+            } catch (error) {
+                console.error('syncBonusTokens:', error);
+            }
+        }
+
+        async function useBonusTokenFromServer() {
+            try {
+                const response = await firebaseFetch('/api/redeem?action=consume', { method: 'POST', body: '{}' });
+                const data = await response.json();
+                if (!response.ok) return false;
+                serverBonusTokens = Math.max(0, Number(data.bonusTokens) || 0);
+                return true;
+            } catch (error) {
+                console.error('consume bonus token:', error);
+                return false;
+            }
+        }
+
+        async function useToken() {
+            // Admin memiliki token unlimited dan tidak boleh mengurangi
+            // token Free User yang tersimpan di browser.
+            if (isAdmin) return true;
+
+            const data = getLimitData();
+            if (data.baseRemaining > 0) {
+                data.baseRemaining -= 1;
+                if (!data.startedAt) data.startedAt = Date.now();
+                saveLimitData(data);
+                return true;
+            }
+            if (getBonusTokens() > 0) return useBonusTokenFromServer();
+            return false;
+        }
+
+        function updateQuota() {
+            const quotaCard = $('quota-card');
+            if (isAdmin || !accessSelected) {
+                quotaCard.classList.add('hidden');
+                $('redeem-card').classList.add('hidden');
+                return;
+            }
+            quotaCard.classList.remove('hidden');
+            $('redeem-card').classList.remove('hidden');
+            const data = getLimitData();
+            const bonus = getBonusTokens();
+            const total = data.baseRemaining + bonus;
+            $('quota-value').textContent = total;
+            $('quota-label').textContent = bonus > 0 ? `${data.baseRemaining} token dasar + ${bonus} token bonus` : 'token dasar tersedia';
+            $('quota-fill').style.width = Math.min(100, (total / (DAILY_LIMIT + Math.max(bonus, 0))) * 100) + '%';
+            $('quota-time').textContent = bonus > 0 ? 'Token bonus tersimpan di Firebase' : 'Reset setelah token dasar habis';
+            updateQuotaCountdown();
+            updateBonusBadge();
+        }
+
+        function updateQuotaCountdown() {
+            if (isAdmin) return;
+            const data = getLimitData();
+            if (data.baseRemaining > 0 || !data.startedAt) {
+                $('quota-countdown').textContent = 'Belum mulai';
+                return;
+            }
+            const remaining = Math.max(0, LIMIT_WINDOW - (Date.now() - data.startedAt));
+            const totalSeconds = Math.ceil(remaining / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            $('quota-countdown').textContent = `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            if (remaining <= 0) {
+                saveLimitData({ baseRemaining: DAILY_LIMIT, startedAt: null });
+                updateQuota();
+            }
+        }
+
+        function startQuotaCountdown() {
+            clearInterval(window.quotaInterval);
+            window.quotaInterval = setInterval(() => { updateQuotaCountdown(); if (!isAdmin) updateBonusBadge(); }, 1000);
+        }
+
+        function updateBonusBadge() {
+            const badge = $('bonus-token-badge');
+            const bonus = getBonusTokens();
+            if (bonus > 0) {
+                badge.textContent = `${bonus} token bonus tersimpan`;
+                badge.classList.remove('hidden');
+            } else badge.classList.add('hidden');
+        }
+
+        function parseReactionInput(value) {
+            const rawItems = String(value || '').split(',');
+            const result = [];
+
+            for (const rawItem of rawItems) {
+                const item = rawItem.trim();
+                if (!item) continue;
+
+                // Emoji bisa terdiri dari beberapa Unicode code point
+                // (contoh: ❤️, 👍🏽, 👨‍👩‍👧‍👦, 🇮🇩).
+                // Gunakan grapheme cluster agar satu emoji tidak terpecah.
+                let graphemes;
+                if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+                    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+                    graphemes = Array.from(segmenter.segment(item), part => part.segment);
+                } else {
+                    graphemes = Array.from(item);
+                }
+
+                const hasEmoji = graphemes.some(grapheme =>
+                    /[\p{Extended_Pictographic}\p{Emoji_Presentation}\p{Emoji_Modifier}\p{Regional_Indicator}]/u.test(grapheme) ||
+                    /\uFE0F|\u20E3/.test(grapheme)
+                );
+
+                if (hasEmoji) result.push(item);
+            }
+
+            return [...new Set(result)].slice(0, 4);
+        }
+
+        function updateReactionPreview() {
+            selectedReactions = parseReactionInput($('reaction-input').value);
+            const preview = $('selected-reactions');
+            if (selectedReactions.length) {
+                preview.innerHTML = selectedReactions.map(item => `<span class="preview-emoji">${escapeHtml(item)}</span>`).join('');
+            } else {
+                preview.innerHTML = '<span class="preview-placeholder">Ketik emoji di atas...</span>';
+            }
+            const count = $('preview-count');
+            if (count) count.textContent = `${selectedReactions.length}/4 emoji`;
+        }
+
+        function isValidChannelUrl(value) {
+            try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'whatsapp.com' && url.pathname.startsWith('/channel/'); } catch { return false; }
+        }
+
+        function saveHistory(item) {
+            let history = []; try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { history = []; }
+            history.unshift(item); localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 10))); renderHistory();
+        }
+
+        function getChannelLabel(url) {
+            try { const parsed = new URL(url); const parts = parsed.pathname.split('/').filter(Boolean); const code = parts[1] || ''; return code ? 'Channel ' + code.slice(0, 8) + (code.length > 8 ? '…' : '') : 'WhatsApp Channel'; } catch { return 'WhatsApp Channel'; }
+        }
+
+        function renderHistory() {
+            const list = $('history-list');
+            let history = [];
+            try { history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { history = []; }
+            if (!history.length) {
+                list.innerHTML = '<div style="color:var(--muted);font-size:13px;">Belum ada riwayat reaction.</div>';
+                return;
+            }
+
+            list.innerHTML = history.map(item => {
+                const reactions = parseReactionInput(item.reaction || '❤️');
+                const emojiHtml = reactions.length
+                    ? reactions.map(emoji => `<span class="history-emoji-item">${escapeHtml(emoji)}</span>`).join('')
+                    : '<span class="history-empty">—</span>';
+
+                return `<div class="history-item"><div class="history-row"><div class="history-emoji">${emojiHtml}</div><div class="history-content"><div class="history-url">${escapeHtml(item.channelLabel || getChannelLabel(item.url))}</div><div class="history-meta"><span class="history-status">✓ ${escapeHtml(item.status || 'Berhasil')}</span><span>${escapeHtml(item.time || '-')}</span></div></div></div></div>`;
+            }).join('');
+        }
+
+        function escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char]); }
+
+        function getSafeResponseInfo(data, fallbackText) {
+            const source = data && typeof data === 'object' ? data : {}; const nested = source.result && typeof source.result === 'object' ? source.result : {};
+            return { status: String(source.status || nested.status || 'success'), deducted: source.deducted ?? nested.deducted ?? null, remaining: source.limit_remaining ?? nested.limit_remaining ?? null, responseTime: source.response_time || source.responseTime || nested.response_time || nested.responseTime || null, channel: source.target_channel || source.url || nested.target_channel || nested.url || null, message: String(source.message || nested.message || '') };
+        }
+
+        function showResult(success, info = {}) {
+            const result = $('result'); result.className = 'result show ' + (success ? 'success' : 'error');
+            const channel = info.channel || ''; const label = channel ? getChannelLabel(channel) : 'WhatsApp Channel'; const status = success ? 'Berhasil diproses' : 'Request gagal'; const icon = success ? '✓' : '×'; const deducted = info.deducted !== null && info.deducted !== undefined ? String(info.deducted) : '-'; const remaining = isAdmin ? '∞' : String(getRemainingTokens()); const responseTime = info.responseTime ? String(info.responseTime) : '-';
+            result.innerHTML = `<div class="result-head"><div class="result-icon">${icon}</div><div><div class="result-title">${escapeHtml(status)}</div><div class="result-subtitle">${success ? 'Reaction telah diterima oleh server.' : 'Server tidak menerima request dengan benar.'}</div></div></div><div class="result-body"><div class="result-grid"><div class="result-stat"><small>Reaction</small><strong>${escapeHtml(info.reaction || '-')}</strong></div><div class="result-stat"><small>Token</small><strong>${escapeHtml(remaining)} tersisa</strong></div><div class="result-stat"><small>Potongan</small><strong>${escapeHtml(deducted)}</strong></div><div class="result-stat"><small>Waktu respons</small><strong>${escapeHtml(responseTime)}</strong></div></div><div class="channel-chip"><div class="channel-chip-icon">LINK</div><div class="channel-chip-text"><small>Target channel</small><strong>${escapeHtml(label)}</strong></div></div>${success && channel ? `<a class="result-link" href="${escapeHtml(channel)}" target="_blank" rel="noopener noreferrer">Buka Channel WhatsApp ↗</a>` : ''}${!success && info.message ? `<div class="result-note">${escapeHtml(info.message.slice(0, 180))}</div>` : ''}</div>`;
+        }
+
+        async function renderAdminCodes() {
+            const list = $('admin-code-list'); if (!list) return;
+            try {
+                const response = await adminFetch('/api/redeem?action=list'); const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Gagal mengambil kode.');
+                const codes = Array.isArray(data.codes) ? data.codes : [];
+                if (!codes.length) { list.innerHTML = '<div class="redeem-info">Belum ada kode redeem.</div>'; return; }
+                list.innerHTML = codes.map(item => { const expired = Date.now() >= Number(item.expiresAt); return `<div class="code-item"><div class="code-item-head"><span class="code-value">${escapeHtml(item.code)}</span><button class="delete-code" type="button" data-delete-code="${escapeHtml(item.code)}">Hapus</button></div><div class="code-meta">+${escapeHtml(item.tokens)} token • ${escapeHtml(item.used)} / ${escapeHtml(item.maxUses)} orang • ${expired ? 'Expired' : 'berlaku sampai ' + new Date(Number(item.expiresAt)).toLocaleString('id-ID')}</div></div>`; }).join('');
+                list.querySelectorAll('[data-delete-code]').forEach(button => button.addEventListener('click', async () => { try { const response = await adminFetch('/api/redeem', { method: 'POST', body: JSON.stringify({ action: 'delete', code: button.dataset.deleteCode }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message || 'Gagal menghapus kode.'); await renderAdminCodes(); showToast('Kode redeem dihapus.'); } catch (error) { showToast(error.message || 'Gagal menghapus kode.'); } }));
+            } catch (error) { list.innerHTML = `<div class="redeem-info">${escapeHtml(error.message || 'Gagal mengambil data kode.')}</div>`; }
+        }
+
+        function generateRedeemCode() { const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let code = ''; for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)]; return code; }
+
+        async function createRedeemCode() {
+            let code = $('new-code').value.trim().toUpperCase().replace(/\s+/g, ''); const tokens = Math.floor(Number($('code-tokens').value)); const maxUses = Math.floor(Number($('code-uses').value)); const hours = Number($('code-expiry').value);
+            if (!code) code = generateRedeemCode();
+            if (!/^[A-Z0-9_-]{3,32}$/.test(code) || !Number.isFinite(tokens) || tokens < 1 || !Number.isFinite(maxUses) || maxUses < 1 || !Number.isFinite(hours) || hours <= 0) { showToast('Pengaturan kode belum valid.'); return; }
+            try { const response = await adminFetch('/api/redeem', { method: 'POST', body: JSON.stringify({ action: 'create', code, tokens, maxUses, hours }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message || 'Gagal membuat kode.'); $('new-code').value = ''; await renderAdminCodes(); showToast(`Kode ${data.code} berhasil dibuat.`); } catch (error) { showToast(error.message || 'Gagal membuat kode.'); }
+        }
+
+        async function redeemCode() {
+            const input = $('redeem-code-input'); const code = input.value.trim().toUpperCase().replace(/\s+/g, '');
+            if (!code) { showToast('Masukkan kode redeem.'); return; }
+            try { const response = await firebaseFetch('/api/redeem', { method: 'POST', body: JSON.stringify({ action: 'redeem', code }) }); const data = await response.json(); if (!response.ok) throw new Error(data.message || 'Redeem gagal.'); serverBonusTokens = Math.max(0, Number(data.bonusTokens) || 0); input.value = ''; updateQuota(); showToast(`Berhasil! +${data.addedTokens} token bonus.`); } catch (error) { showToast(error.message || 'Redeem gagal.'); }
+        }
+
+        async function sendReaction() {
+            const url = $('channel-url').value.trim();
+            const captcha = $('captcha-input').value.trim().toUpperCase();
+            const button = $('send-btn');
+
+            if (!isValidChannelUrl(url)) {
+                showToast('Masukkan link WhatsApp Channel yang valid.');
+                return;
+            }
+
+            updateReactionPreview();
+
+            if (!selectedReactions.length) {
+                showToast('Masukkan minimal 1 emoji.');
+                return;
+            }
+
+            if (captcha !== captchaCode) {
+                showToast('CAPTCHA salah.');
+                generateCaptcha();
+                return;
+            }
+
+            if (!isAdmin && getRemainingTokens() <= 0) {
+                showToast('Token Free User sudah habis.');
+                updateQuota();
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = 'Mengirim reaction...';
+            showResult(true, {
+                reaction: selectedReactions.join(','),
+                channel: url,
+                responseTime: 'Memproses'
+            });
+
+            try {
+                const query = new URLSearchParams({
+                    url,
+                    reaction: selectedReactions.join(',')
+                });
+
+                const response = await fetch(`${API_BASE_URL}?${query.toString()}`);
+                const rawText = await response.text();
+                let data;
+
+                try {
+                    data = JSON.parse(rawText);
+                } catch {
+                    data = { message: rawText };
+                }
+
+                const info = getSafeResponseInfo(data, rawText);
+                info.channel = url;
+                info.reaction = selectedReactions.join(',');
+
+                if (!response.ok) {
+                    showResult(false, info);
+                    return;
+                }
+
+                const tokenDeducted = await useToken();
+                if (!tokenDeducted) {
+                    showToast('Token gagal dipotong. Coba lagi.');
+                    return;
+                }
+                updateQuota();
+                saveHistory({
+                    url,
+                    channelLabel: getChannelLabel(url),
+                    reaction: selectedReactions.join(','),
+                    status: 'Berhasil',
+                    time: new Date().toLocaleString('id-ID')
+                });
+
+                showResult(true, info);
+                showToast(isAdmin ? 'Reaction berhasil dikirim.' : 'Reaction berhasil dikirim. 1 token terpakai.');
+                generateCaptcha();
+                $('captcha-input').focus();
+            } catch (error) {
+                console.error(error);
+                showResult(false, {
+                    channel: url,
+                    reaction: selectedReactions.join(','),
+                    message: 'Tidak dapat menghubungi server Vercel.'
+                });
+                showToast('Koneksi ke server gagal.');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Kirim Reaction';
+            }
+        }
+
+        function updateAccessStatus() {
+            const status = $('access-status');
+            if (isAdmin) {
+                status.textContent = 'Admin User • Unlimited Token';
+                status.className = 'access-status admin';
+            } else if (accessSelected) {
+                status.textContent = 'Free User • 2 token / 7 jam';
+                status.className = 'access-status free';
+            } else {
+                status.textContent = 'Belum memilih akses';
+                status.className = 'access-status';
+            }
+        }
+
+        function showReactionPanel() {
+            updateAccessStatus();
+            $('access-card').classList.add('hidden');
+            $('reaction-card').classList.remove('hidden');
+            $('history-card').classList.remove('hidden');
+            if (isAdmin) {
+                $('admin-card').classList.remove('hidden');
+            } else {
+                $('admin-card').classList.add('hidden');
+            }
+        }
+
+        function openAdmin() {
+            $('access-options').classList.add('hidden');
+            $('admin-login').classList.remove('hidden');
+            $('admin-password').focus();
+        }
+
+        async function confirmAdmin() {
+            const password = $('admin-password').value;
+            if (!password) {
+                showToast('Masukkan password admin.');
+                return;
+            }
+
+            const button = $('admin-login button');
+            if (button) button.disabled = true;
+
+            try {
+                const headers = new Headers();
+                headers.set('x-admin-password', password);
+                const response = await fetch('/api/redeem?action=admin-check', { headers });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.message || 'Password admin salah.');
+
+                // Password hanya disimpan di memori selama sesi admin,
+                // bukan di source HTML dan bukan di localStorage.
+                adminPassword = password;
+                isAdmin = true;
+                accessSelected = true;
+                $('admin-password').value = '';
+                showReactionPanel();
+                updateQuota();
+                renderAdminCodes();
+                showToast('Admin mode aktif.');
+            } catch (error) {
+                adminPassword = '';
+                isAdmin = false;
+                showToast(error.message || 'Password admin salah.');
+                $('admin-password').value = '';
+            } finally {
+                if (button) button.disabled = false;
+            }
+        }
+
+        function applyTheme() {
+            const saved = localStorage.getItem(THEME_KEY);
+            const dark = saved === 'dark';
+            document.body.classList.toggle('dark', dark);
+            $('theme-btn').textContent = dark ? 'LIGHT' : 'DARK';
+        }
+
+        $('free-btn').addEventListener('click', () => {
+            isAdmin = false;
+            accessSelected = true;
+            $('admin-card').classList.remove('show');
+            showReactionPanel();
+            updateQuota();
+            syncBonusTokens();
+            showToast('Free User dipilih.');
+        });
+
+        $('admin-btn').addEventListener('click', openAdmin);
+        $('admin-logout').addEventListener('click', () => {
+            isAdmin = false;
+            adminPassword = '';
+            accessSelected = false;
+            $('admin-card').classList.add('hidden');
+            $('reaction-card').classList.add('hidden');
+            $('history-card').classList.add('hidden');
+            $('quota-card').classList.add('hidden');
+            $('redeem-card').classList.add('hidden');
+            $('admin-login').classList.add('hidden');
+            $('access-options').classList.remove('hidden');
+            $('admin-password').value = '';
+            $('access-card').classList.remove('hidden');
+            updateAccessStatus();
+            showToast('Keluar dari Admin.');
+        });
+        $('admin-confirm').addEventListener('click', confirmAdmin);
+
+        $('admin-password').addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                confirmAdmin();
+            }
+        });
+        $('send-btn').addEventListener('click', sendReaction);
+        $('redeem-btn').addEventListener('click', redeemCode);
+        $('redeem-code-input').addEventListener('keydown', event => {
+            if (event.key === 'Enter') redeemCode();
+        });
+        $('create-code-btn').addEventListener('click', createRedeemCode);
+        $('captcha-refresh').addEventListener('click', generateCaptcha);
+
+        $('theme-btn').addEventListener('click', () => {
+            const dark = !document.body.classList.contains('dark');
+            document.body.classList.toggle('dark', dark);
+            localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light');
+            $('theme-btn').textContent = dark ? 'LIGHT' : 'DARK';
+        });
+
+        $('reaction-input').addEventListener('input', updateReactionPreview);
+
+        function showFollowChannelAlert() {
+            $('follow-modal-backdrop').classList.remove('hidden');
+        }
+
+        function closeFollowChannelAlert() {
+            $('follow-modal-backdrop').classList.add('hidden');
+        }
+
+        $('follow-later-btn').addEventListener('click', closeFollowChannelAlert);
+        $('follow-channel-btn').addEventListener('click', closeFollowChannelAlert);
+
+        applyTheme();
+        updateAccessStatus();
+        generateCaptcha();
+        updateQuota();
+        updateReactionPreview();
+        renderHistory();
+        syncBonusTokens();
+        startQuotaCountdown();
+        showFollowChannelAlert();
+    </script>
+</body>
+</html>
